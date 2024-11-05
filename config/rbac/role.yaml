@@ -1,17 +1,32 @@
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  labels:
-    app.kubernetes.io/name: namespacelabel-operator
-    app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-  # Allow access to Namespaces so the operator can apply labels to them
-  - apiGroups: [ "" ]
-    resources: [ "namespaces" ]
-    verbs: [ "get", "list", "watch", "update", "patch" ]
-
-    # Allow access to Namespacelabel custom resources to manage the CRD
-  - apiGroups: [ "labels.dana.io" ]
-    resources: [ "namespacelabels" ]
-    verbs: [ "get", "list", "watch", "create", "update", "patch", "delete" ]
+- apiGroups:
+  - labels.dana.io
+  resources:
+  - namespacelabels
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - labels.dana.io
+  resources:
+  - namespacelabels/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - labels.dana.io
+  resources:
+  - namespacelabels/status
+  verbs:
+  - get
+  - patch
+  - update
