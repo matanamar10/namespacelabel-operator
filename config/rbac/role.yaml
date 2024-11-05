@@ -6,6 +6,12 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: manager-role
 rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
+  # Allow access to Namespaces so the operator can apply labels to them
+  - apiGroups: [ "" ]
+    resources: [ "namespaces" ]
+    verbs: [ "get", "list", "watch", "update", "patch" ]
+
+    # Allow access to Namespacelabel custom resources to manage the CRD
+  - apiGroups: [ "labels.dana.io" ]
+    resources: [ "namespacelabels" ]
+    verbs: [ "get", "list", "watch", "create", "update", "patch", "delete" ]
