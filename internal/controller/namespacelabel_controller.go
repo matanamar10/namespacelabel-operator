@@ -55,6 +55,7 @@ type NamespacelabelReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 
 // Reconcile function with finalizer logic integrated
+
 func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 	var namespaceLabel labelsv1.Namespacelabel
