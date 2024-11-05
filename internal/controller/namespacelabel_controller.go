@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	labelsv1 "github.com/matanamar10/namespacelabel-operator.git/api/v1"
+	"github.com/matanamar10/namespacelabel-operator.git/internal/finalizer"
 	"github.com/matanamar10/namespacelabel-operator.git/internal/utils"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,11 +54,25 @@ type NamespacelabelReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.0/pkg/reconcile
 
+// Reconcile function with finalizer logic integrated
 func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
 	var namespaceLabel labelsv1.Namespacelabel
 	if err := r.Get(ctx, req.NamespacedName, &namespaceLabel); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if !namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
+		if err := finalizer.CleanupFinalizer(ctx, r.Client, &namespaceLabel); err != nil {
+			r.Log.Error(err, "Failed to clean up labels during finalizer")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if err := finalizer.EnsureFinalizer(ctx, r.Client, &namespaceLabel); err != nil {
+		r.Log.Error(err, "Failed to add finalizer")
+		return ctrl.Result{}, err
 	}
 
 	var namespace corev1.Namespace
@@ -66,7 +81,6 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	protectedLabels, err := utils.LoadProtectedLabels()
-
 	if err != nil {
 		r.Log.Error(err, "Failed to load protected labels")
 		return ctrl.Result{}, err
@@ -74,19 +88,25 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	updatedLabels := make(map[string]string)
 	skippedLabels := make(map[string]string)
+	duplicateLabels := make(map[string]string)
 
 	for key, value := range namespaceLabel.Spec.Labels {
-		if _, exists := protectedLabels[key]; !exists {
-			updatedLabels[key] = value
-		} else {
+		if _, exists := protectedLabels[key]; exists {
 			r.Log.Info("Skipping protected label", "key", key, "value", value)
 			skippedLabels[key] = value
-
 			r.Recorder.Event(&namespaceLabel, corev1.EventTypeWarning, "ProtectedLabelSkipped",
 				fmt.Sprintf("Label %s=%s is protected and was not applied", key, value))
+		} else if existingValue, exists := namespace.Labels[key]; exists {
+			r.Log.Info("Skipping duplicate label", "key", key, "value", value, "existingValue", existingValue)
+			duplicateLabels[key] = value
+			r.Recorder.Event(&namespaceLabel, corev1.EventTypeWarning, "DuplicateLabelSkipped",
+				fmt.Sprintf("Label %s=%s was not applied because it already exists with value %s", key, value, existingValue))
+		} else {
+			updatedLabels[key] = value
 		}
 	}
 
+	// Apply the updated labels to the namespace if there are any
 	if namespace.Labels == nil {
 		namespace.Labels = make(map[string]string)
 	}
@@ -94,14 +114,19 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		namespace.Labels[key] = value
 	}
 
+	// Update the namespace with the new labels
 	if err := r.Update(ctx, &namespace); err != nil {
 		return ctrl.Result{}, err
 	}
 
+	// Update the NamespaceLabel status to reflect applied, skipped, and duplicate labels
 	namespaceLabel.Status.AppliedLabels = updatedLabels
 	namespaceLabel.Status.SkippedLabels = skippedLabels
 	namespaceLabel.Status.LastUpdated = metav1.Now()
-	namespaceLabel.Status.Message = "Labels reconciled with skipped protected labels"
+	namespaceLabel.Status.Message = "Labels reconciled with skipped and duplicate protected labels"
+	if len(duplicateLabels) > 0 {
+		namespaceLabel.Status.Message += "; some labels were duplicates and not added."
+	}
 
 	if err := r.Status().Update(ctx, &namespaceLabel); err != nil {
 		r.Log.Error(err, "Failed to update NamespaceLabel status")
@@ -109,7 +134,6 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	return ctrl.Result{}, nil
-
 }
 
 func (r *NamespacelabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
