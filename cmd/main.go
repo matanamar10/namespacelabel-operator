@@ -17,8 +17,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	labelsv1 "github.com/matanamar10/namespacelabel-operator.git/api/v1"
-	"github.com/matanamar10/namespacelabel-operator.git/internal/controller"
+	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
+	"github.com/matanamar10/namespacelabel-operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 
