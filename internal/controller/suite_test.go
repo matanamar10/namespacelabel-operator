@@ -33,7 +33,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	labelsv1 "github.com/matanamar10/namespacelabel-operator.git/api/v1"
+	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 

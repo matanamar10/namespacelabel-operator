@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	labelsv1 "github.com/matanamar10/namespacelabel-operator.git/api/v1"
+	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 )
 
 var _ = Describe("Namespacelabel Controller", func() {

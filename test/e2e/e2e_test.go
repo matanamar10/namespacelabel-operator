@@ -24,7 +24,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/matanamar10/namespacelabel-operator.git/test/utils"
+	"github.com/matanamar10/namespacelabel-operator/test/utils"
 )
 
 const namespace = "namespacelabel-operator-system"
