@@ -8,9 +8,7 @@ import (
 	"os"
 )
 
-// LoadProtectedLabels loads and parses the PROTECTED_LABELS environment variable from .env
 func LoadProtectedLabels() (map[string]string, error) {
-	// Load environment variables from .env file
 	if err := godotenv.Load(); err != nil {
 		log.Println("Error loading .env file:", err)
 		return nil, err
