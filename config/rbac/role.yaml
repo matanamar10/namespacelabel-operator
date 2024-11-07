@@ -29,6 +29,7 @@ rules:
       - get
       - patch
       - update
+  # Add permissions for namespaces in the core API group
   - apiGroups:
       - ""
     resources:
