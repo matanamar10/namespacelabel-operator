@@ -40,7 +40,7 @@ spec:
           name: manager
           envFrom:
             - configMapRef:
-                name: operator-env  # Load environment variables from ConfigMap
+                name: namespacelabel-operator-config
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
