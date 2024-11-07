@@ -107,7 +107,6 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
-	// Apply the updated labels to the namespace if there are any
 	if namespace.Labels == nil {
 		namespace.Labels = make(map[string]string)
 	}
