@@ -1,4 +1,4 @@
-module github.com/matanamar10/namespacelabel-operator.git
+module github.com/matanamar10/namespacelabel-operator
 
 go 1.22.0
 
