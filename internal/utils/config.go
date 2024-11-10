@@ -3,17 +3,11 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 )
 
 func LoadProtectedLabels() (map[string]string, error) {
-	if err := godotenv.Load(); err != nil {
-		log.Println("Error loading .env file:", err)
-		return nil, err
-	}
-
 	protectedLabelsJSON := os.Getenv("PROTECTED_LABELS")
 	if protectedLabelsJSON == "" {
 		log.Println("PROTECTED_LABELS environment variable is not set")
@@ -22,7 +16,7 @@ func LoadProtectedLabels() (map[string]string, error) {
 
 	protectedLabels := make(map[string]string)
 	if err := json.Unmarshal([]byte(protectedLabelsJSON), &protectedLabels); err != nil {
-		log.Fatalf("Failed to parse PROTECTED_LABELS: %v", err)
+		log.Printf("Failed to parse PROTECTED_LABELS: %v", err)
 		return nil, err
 	}
 
