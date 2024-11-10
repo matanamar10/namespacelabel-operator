@@ -9,11 +9,11 @@ import (
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 )
 
-const finalizerName = "namespacelabels.finalizers.dana.io"
+const FinalizerName = "namespacelabels.finalizers.dana.io"
 
 func EnsureFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel) error {
-	if !containsString(obj.GetFinalizers(), finalizerName) {
-		obj.SetFinalizers(append(obj.GetFinalizers(), finalizerName))
+	if !containsString(obj.GetFinalizers(), FinalizerName) {
+		obj.SetFinalizers(append(obj.GetFinalizers(), FinalizerName))
 		return c.Update(ctx, obj)
 	}
 	return nil
@@ -25,7 +25,7 @@ func CleanupFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namesp
 	}
 
 	// Remove the finalizer
-	obj.SetFinalizers(removeString(obj.GetFinalizers(), finalizerName))
+	obj.SetFinalizers(removeString(obj.GetFinalizers(), FinalizerName))
 	return c.Update(ctx, obj)
 }
 

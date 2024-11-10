@@ -17,12 +17,14 @@ limitations under the License.
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:golint,revive
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -137,4 +139,10 @@ func GetProjectDir() (string, error) {
 	}
 	wd = strings.Replace(wd, "/test/e2e", "", -1)
 	return wd, nil
+}
+
+// DoesResourceExist checks if a resource exists in the Kubernetes cluster.
+func DoesResourceExist(k8sClient client.Client, obj client.Object) bool {
+	err := k8sClient.Get(context.Background(), client.ObjectKeyFromObject(obj), obj)
+	return err == nil
 }
