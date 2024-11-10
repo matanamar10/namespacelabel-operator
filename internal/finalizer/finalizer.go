@@ -19,7 +19,6 @@ func EnsureFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespa
 	// Check if the finalizer is already set; if not, add it.
 	if !containsString(obj.GetFinalizers(), FinalizerName) {
 		obj.SetFinalizers(append(obj.GetFinalizers(), FinalizerName))
-		// Update the object with the finalizer to persist it in the API server.
 		return c.Update(ctx, obj)
 	}
 	return nil
@@ -28,7 +27,6 @@ func EnsureFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespa
 // CleanupFinalizer performs cleanup actions, removing labels from the namespace associated with
 // the Namespacelabel CR, and then removes the finalizer itself.
 func CleanupFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel) error {
-	// Perform any necessary cleanup in the associated namespace
 	if err := cleanupNamespaceLabels(ctx, c, *obj); err != nil {
 		return fmt.Errorf("failed to clean up labels: %w", err)
 	}
@@ -42,17 +40,14 @@ func CleanupFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namesp
 // This function is part of the finalizer process to ensure resources are cleaned up.
 func cleanupNamespaceLabels(ctx context.Context, c client.Client, namespaceLabel labelsv1.Namespacelabel) error {
 	var namespace corev1.Namespace
-	// Retrieve the namespace associated with the Namespacelabel CR.
 	if err := c.Get(ctx, client.ObjectKey{Name: namespaceLabel.Namespace}, &namespace); err != nil {
 		return err
 	}
 
-	// Remove each label specified in the Namespacelabel CR from the namespace.
 	for key := range namespaceLabel.Spec.Labels {
 		delete(namespace.Labels, key)
 	}
 
-	// Update the namespace to persist the label removals.
 	return c.Update(ctx, &namespace)
 }
 
