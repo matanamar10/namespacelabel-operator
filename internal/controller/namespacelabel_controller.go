@@ -59,8 +59,8 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// Handle deletion and finalizer setup (unchanged)
 	if !namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
-		// Clean up resources before deletion
 		if err := finalizer.CleanupFinalizer(ctx, r.Client, &namespaceLabel); err != nil {
 			r.Log.Error(err, "Failed to clean up labels during finalizer")
 			return ctrl.Result{}, err
@@ -104,6 +104,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 	}
 
+	// Update labels in the namespace
 	if namespace.Labels == nil {
 		namespace.Labels = make(map[string]string)
 	}
@@ -115,13 +116,24 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
+	// Update Status Conditions
 	namespaceLabel.Status.AppliedLabels = updatedLabels
 	namespaceLabel.Status.SkippedLabels = skippedLabels
 	namespaceLabel.Status.LastUpdated = metav1.Now()
-	namespaceLabel.Status.Message = "Labels reconciled with skipped and duplicate protected labels"
-	if len(duplicateLabels) > 0 {
-		namespaceLabel.Status.Message += "; some labels were duplicates and not added."
+
+	if len(skippedLabels) > 0 {
+		r.SetCondition(ctx, &namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsSkipped", "Some labels were skipped due to being protected.")
+	} else {
+		r.SetCondition(ctx, &namespaceLabel, "LabelsSkipped", metav1.ConditionFalse, "NoLabelsSkipped", "No labels were skipped.")
 	}
+
+	if len(duplicateLabels) > 0 {
+		r.SetCondition(ctx, &namespaceLabel, "DuplicateLabels", metav1.ConditionTrue, "DuplicateLabelsFound", "Some labels were duplicates and not added.")
+	} else {
+		r.SetCondition(ctx, &namespaceLabel, "DuplicateLabels", metav1.ConditionFalse, "NoDuplicateLabels", "No duplicate labels were found.")
+	}
+
+	r.SetCondition(ctx, &namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
 
 	if err := r.Status().Update(ctx, &namespaceLabel); err != nil {
 		r.Log.Error(err, "Failed to update Namespacelabel status")
@@ -129,6 +141,25 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *NamespacelabelReconciler) SetCondition(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
+	condition := metav1.Condition{
+		Type:               conditionType,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	}
+
+	for i, cond := range namespaceLabel.Status.Conditions {
+		if cond.Type == conditionType {
+			namespaceLabel.Status.Conditions[i] = condition
+			return
+		}
+	}
+
+	namespaceLabel.Status.Conditions = append(namespaceLabel.Status.Conditions, condition)
 }
 
 func (r *NamespacelabelReconciler) SetupWithManager(mgr ctrl.Manager) error {

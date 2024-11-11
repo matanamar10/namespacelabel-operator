@@ -25,22 +25,21 @@ type NamespacelabelSpec struct {
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
-// NamespacelabelStatus defines the observed state of Namespacelabel
+// NamespacelabelStatus defines the observed state of Namespacelabel object - the Namespacelabel object grant permissions for users to label their namespaces
 type NamespacelabelStatus struct {
 	AppliedLabels map[string]string `json:"appliedLabels,omitempty"`
 
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
-	Message string `json:"message,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"` // List of conditions for better tracking of status
 
 	SkippedLabels map[string]string `json:"skippedLabels,omitempty"` // New field to track skipped labels
-
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Namespacelabel is the Schema for the namespacelabels API
+// Namespacelabel is an object which grant the option to give permissions for user to label his namespace.
 type Namespacelabel struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
