@@ -20,13 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // NamespacelabelSpec defines the desired state of Namespacelabel
 type NamespacelabelSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
@@ -34,16 +29,12 @@ type NamespacelabelSpec struct {
 type NamespacelabelStatus struct {
 	AppliedLabels map[string]string `json:"appliedLabels,omitempty"`
 
-	// LastUpdated is the timestamp of the last successful label update.
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
-	// Message provides feedback about the current state, such as success or any errors encountered.
 	Message string `json:"message,omitempty"`
 
 	SkippedLabels map[string]string `json:"skippedLabels,omitempty"` // New field to track skipped labels
 
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
 }
 
 // +kubebuilder:object:root=true
