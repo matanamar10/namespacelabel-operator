@@ -54,11 +54,9 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	var namespaceLabel labelsv1.Namespacelabel
 	if err := r.Get(ctx, req.NamespacedName, &namespaceLabel); err != nil {
-		// Ignore the error if the resource was not found
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Handle deletion and finalizer setup (unchanged)
 	if !namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
 		if err := finalizer.CleanupFinalizer(ctx, r.Client, &namespaceLabel); err != nil {
 			r.Log.Error(err, "Failed to clean up labels during finalizer")
