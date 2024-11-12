@@ -16,7 +16,6 @@ const FinalizerName = "namespacelabels.finalizers.dana.io"
 // EnsureFinalizer ensures that the specified finalizer is added to the Namespacelabel CR if it’s missing.
 // This makes sure that cleanup operations are triggered before deletion.
 func EnsureFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel) error {
-	// Check if the finalizer is already set; if not, add it.
 	if !containsString(obj.GetFinalizers(), FinalizerName) {
 		obj.SetFinalizers(append(obj.GetFinalizers(), FinalizerName))
 		return c.Update(ctx, obj)
@@ -31,7 +30,6 @@ func CleanupFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namesp
 		return fmt.Errorf("failed to clean up labels: %w", err)
 	}
 
-	// Remove the finalizer from the CR, allowing Kubernetes to delete it.
 	obj.SetFinalizers(removeString(obj.GetFinalizers(), FinalizerName))
 	return c.Update(ctx, obj)
 }
