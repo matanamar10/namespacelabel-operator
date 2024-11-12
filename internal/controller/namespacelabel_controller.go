@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	loadprotectedlabels "github.com/matanamar10/namespacelabel-operator/internal/utility-packages"
 
 	"github.com/go-logr/logr"
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
@@ -74,7 +75,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	protectedLabels, err := utils.LoadProtectedLabels()
+	protectedLabels, err := loadprotectedlabels.LoadProtectedLabels()
 	if err != nil {
 		r.Log.Error(err, "Failed to load protected labels")
 		return ctrl.Result{}, err
