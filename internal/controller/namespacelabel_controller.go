@@ -122,18 +122,18 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	namespaceLabel.Status.LastUpdated = metav1.Now()
 
 	if len(skippedLabels) > 0 {
-		r.SetCondition(ctx, &namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsSkipped", "Some labels were skipped due to being protected.")
+		r.SetCondition(&namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsSkipped", "Some labels were skipped due to being protected.")
 	} else {
-		r.SetCondition(ctx, &namespaceLabel, "LabelsSkipped", metav1.ConditionFalse, "NoLabelsSkipped", "No labels were skipped.")
+		r.SetCondition(&namespaceLabel, "LabelsSkipped", metav1.ConditionFalse, "NoLabelsSkipped", "No labels were skipped.")
 	}
 
 	if len(duplicateLabels) > 0 {
-		r.SetCondition(ctx, &namespaceLabel, "DuplicateLabels", metav1.ConditionTrue, "DuplicateLabelsFound", "Some labels were duplicates and not added.")
+		r.SetCondition(&namespaceLabel, "DuplicateLabels", metav1.ConditionTrue, "DuplicateLabelsFound", "Some labels were duplicates and not added.")
 	} else {
-		r.SetCondition(ctx, &namespaceLabel, "DuplicateLabels", metav1.ConditionFalse, "NoDuplicateLabels", "No duplicate labels were found.")
+		r.SetCondition(&namespaceLabel, "DuplicateLabels", metav1.ConditionFalse, "NoDuplicateLabels", "No duplicate labels were found.")
 	}
 
-	r.SetCondition(ctx, &namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
+	r.SetCondition(&namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
 
 	if err := r.Status().Update(ctx, &namespaceLabel); err != nil {
 		r.Log.Error(err, "Failed to update Namespacelabel status")
@@ -143,7 +143,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func (r *NamespacelabelReconciler) SetCondition(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
+func (r *NamespacelabelReconciler) SetCondition(namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
 	condition := metav1.Condition{
 		Type:               conditionType,
 		Status:             status,
