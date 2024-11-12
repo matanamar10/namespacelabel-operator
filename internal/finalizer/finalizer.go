@@ -29,7 +29,6 @@ func EnsureFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespa
 // CleanupFinalizer performs cleanup actions, removing labels from the namespace associated with
 // the Namespacelabel CR, and then removes the finalizer itself.
 func CleanupFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel) error {
-	// Perform the necessary cleanup actions
 	if err := cleanupNamespaceLabels(ctx, c, *obj); err != nil {
 		return fmt.Errorf("failed to clean up labels: %w", err)
 	}
