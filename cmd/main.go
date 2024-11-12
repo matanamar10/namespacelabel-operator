@@ -58,7 +58,9 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	// Initialize and configure the logger
+	logger := zap.New(zap.UseFlagOptions(&opts))
+	ctrl.SetLogger(logger)
 
 	disableHTTP2 := func(c *tls.Config) {
 		setupLog.Info("disabling http/2")
@@ -92,32 +94,33 @@ func main() {
 		LeaderElectionID:       "09f6f97c.dana.io",
 	})
 	if err != nil {
-		setupLog.Error(err, "unable to start manager")
+		logger.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
 	if err = (&controller.NamespacelabelReconciler{
 		Client:   mgr.GetClient(),
+		Log:      logger,
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("NamespacelabelController"),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Namespacelabel")
+		logger.Error(err, "unable to create controller", "controller", "Namespacelabel")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
+		logger.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
+		logger.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting manager")
+	logger.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
+		logger.Error(err, "problem running manager")
 		os.Exit(1)
 	}
 }
