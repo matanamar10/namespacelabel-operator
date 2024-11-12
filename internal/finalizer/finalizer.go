@@ -3,6 +3,7 @@ package finalizer
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,9 +17,11 @@ const FinalizerName = "namespacelabels.finalizers.dana.io"
 // EnsureFinalizer ensures that the specified finalizer is added to the Namespacelabel CR if it’s missing.
 // This makes sure that cleanup operations are triggered before deletion.
 func EnsureFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel) error {
-	if !containsString(obj.GetFinalizers(), FinalizerName) {
-		obj.SetFinalizers(append(obj.GetFinalizers(), FinalizerName))
-		return c.Update(ctx, obj)
+	if !controllerutil.ContainsFinalizer(obj, FinalizerName) {
+		controllerutil.AddFinalizer(obj, FinalizerName)
+		if err := c.Update(ctx, obj); err != nil {
+			return fmt.Errorf("failed to add finalizer: %w", err)
+		}
 	}
 	return nil
 }
@@ -26,12 +29,17 @@ func EnsureFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespa
 // CleanupFinalizer performs cleanup actions, removing labels from the namespace associated with
 // the Namespacelabel CR, and then removes the finalizer itself.
 func CleanupFinalizer(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel) error {
+	// Perform the necessary cleanup actions
 	if err := cleanupNamespaceLabels(ctx, c, *obj); err != nil {
 		return fmt.Errorf("failed to clean up labels: %w", err)
 	}
 
-	obj.SetFinalizers(removeString(obj.GetFinalizers(), FinalizerName))
-	return c.Update(ctx, obj)
+	// Remove the finalizer from the object
+	controllerutil.RemoveFinalizer(obj, FinalizerName)
+	if err := c.Update(ctx, obj); err != nil {
+		return fmt.Errorf("failed to remove finalizer: %w", err)
+	}
+	return nil
 }
 
 // cleanupNamespaceLabels removes labels from a namespace as specified by the Namespacelabel CR.
@@ -47,27 +55,4 @@ func cleanupNamespaceLabels(ctx context.Context, c client.Client, namespaceLabel
 	}
 
 	return c.Update(ctx, &namespace)
-}
-
-// containsString checks if a given string exists in a slice of strings.
-// Used to verify if the finalizer already exists.
-func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
-}
-
-// removeString removes a specified string from a slice of strings.
-// Used to remove the finalizer from the list in a Namespacelabel CR.
-func removeString(slice []string, s string) []string {
-	var result []string
-	for _, item := range slice {
-		if item != s {
-			result = append(result, item)
-		}
-	}
-	return result
 }
