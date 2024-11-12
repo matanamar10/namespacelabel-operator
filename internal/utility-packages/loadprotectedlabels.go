@@ -1,4 +1,4 @@
-package utils
+package loadprotectedlabels
 
 import (
 	"encoding/json"
