@@ -42,7 +42,6 @@ type NamespacelabelReconciler struct {
 	Recorder record.EventRecorder
 }
 
-// RBAC permissions required by the reconciler to manage Namespacelabels and namespaces.
 // +kubebuilder:rbac:groups=labels.dana.io,resources=namespacelabels,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=labels.dana.io,resources=namespacelabels/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=labels.dana.io,resources=namespacelabels/finalizers,verbs=update
