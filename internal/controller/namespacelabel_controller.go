@@ -31,7 +31,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // NamespacelabelReconciler reconciles a Namespacelabel object
@@ -49,36 +48,31 @@ type NamespacelabelReconciler struct {
 
 // Reconcile reconciles a Namespacelabel object and manages finalizers and namespace labels.
 func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	// Obtain a logger for this context
-	_ = log.FromContext(ctx)
 
 	var namespaceLabel labelsv1.Namespacelabel
 	if err := r.Get(ctx, req.NamespacedName, &namespaceLabel); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, client.IgnoreNotFound(fmt.Errorf("failed to get namespace label: %w", err))
 	}
 
 	if !namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
 		if err := finalizer.CleanupFinalizer(ctx, r.Client, &namespaceLabel); err != nil {
-			r.Log.Error(err, "Failed to clean up labels during finalizer")
-			return ctrl.Result{}, err
+			return ctrl.Result{}, fmt.Errorf("failed to clean up labels during finalizer: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
 
 	if err := finalizer.EnsureFinalizer(ctx, r.Client, &namespaceLabel); err != nil {
-		r.Log.Error(err, "Failed to add finalizer")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("failed to add finalizer to the namespacelabel: %w", err)
 	}
 
 	var namespace corev1.Namespace
 	if err := r.Get(ctx, types.NamespacedName{Name: req.Namespace}, &namespace); err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("failed to get namespace: %w", err)
 	}
 
 	protectedLabels, err := loadprotectedlabels.LoadProtectedLabels()
 	if err != nil {
-		r.Log.Error(err, "Failed to load protected labels")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("failed to load the protected labels list: %w", err)
 	}
 
 	updatedLabels := make(map[string]string)
@@ -110,7 +104,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if err := r.Update(ctx, &namespace); err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("failed to update namespace: %w", err)
 	}
 
 	// Update Status Conditions
@@ -133,8 +127,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	r.SetCondition(&namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
 
 	if err := r.Status().Update(ctx, &namespaceLabel); err != nil {
-		r.Log.Error(err, "Failed to update Namespacelabel status")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, fmt.Errorf("failed to update Namespacelabel status: %w", err)
 	}
 
 	return ctrl.Result{}, nil
