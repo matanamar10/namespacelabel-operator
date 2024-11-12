@@ -31,9 +31,11 @@ type NamespacelabelStatus struct {
 
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
-	Conditions []metav1.Condition `json:"conditions,omitempty"` // List of conditions for better tracking of status
+	// List of conditions for better tracking of status
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	SkippedLabels map[string]string `json:"skippedLabels,omitempty"` // New field to track skipped labels
+	// List of conditions for better tracking of status
+	SkippedLabels map[string]string `json:"skippedLabels,omitempty"`
 }
 
 // +kubebuilder:object:root=true
