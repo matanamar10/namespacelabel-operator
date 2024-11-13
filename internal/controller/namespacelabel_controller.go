@@ -54,20 +54,17 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return *result, nil
 	}
 
-	// Ensure finalizer is added
 	if err := r.ensureFinalizer(ctx, &namespaceLabel); err != nil {
 		r.Log.Error(err, "failed to ensure finalizer")
 		return ctrl.Result{}, err
 	}
 
-	// Process and update namespace labels
 	updatedLabels, skippedLabels, duplicateLabels, err := r.processLabels(ctx, &namespaceLabel)
 	if err != nil {
 		r.Log.Error(err, "failed to process labels")
 		return ctrl.Result{}, err
 	}
 
-	// Update status based on label processing results
 	if err := r.updateStatus(ctx, &namespaceLabel, updatedLabels, skippedLabels, duplicateLabels); err != nil {
 		r.Log.Error(err, "failed to update Namespacelabel status")
 		return ctrl.Result{}, fmt.Errorf("failed to update Namespacelabel status: %w", err)

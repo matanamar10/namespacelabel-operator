@@ -33,10 +33,6 @@ type NamespacelabelStatus struct {
 	// This map includes key-value pairs of all successfully applied labels.
 	AppliedLabels map[string]string `json:"appliedLabels,omitempty"`
 
-	// LastUpdated indicates the last time the status was updated.
-	// This timestamp is useful for tracking when the object was last reconciled.
-	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
-
 	// Conditions is a list of conditions that provide additional insight into the status of the Namespacelabel.
 	// Conditions can include statuses like LabelsApplied, LabelsSkipped, and others.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`

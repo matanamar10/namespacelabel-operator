@@ -33,7 +33,6 @@ func Ensure(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, 
 func Cleanup(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, logger logr.Logger) error {
 	logger.Info("Starting cleanup for Namespacelabel", "namespaceLabel", obj.Name)
 
-	// Perform cleanup logic using a helper function in the controller package
 	if err := cleanup.Cleanup(ctx, c, *obj, logger); err != nil {
 		logger.Error(err, "Failed to clean up labels for Namespacelabel", "namespaceLabel", obj.Name)
 		return fmt.Errorf("failed to clean up labels: %w", err)
