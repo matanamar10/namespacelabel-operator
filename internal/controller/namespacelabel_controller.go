@@ -206,7 +206,6 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 }
 
 func (r *NamespacelabelReconciler) ensureFinalizer(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
-	// Pass r.Log as an additional argument to EnsureFinalizer
 	if err := finalizer.EnsureFinalizer(ctx, r.Client, namespaceLabel, r.Log); err != nil {
 		r.Log.Error(err, "Failed to ensure finalizer", "namespaceLabel", namespaceLabel.Name)
 		return fmt.Errorf("failed to add finalizer to the namespacelabel: %w", err)
