@@ -22,26 +22,35 @@ import (
 
 // NamespacelabelSpec defines the desired state of Namespacelabel
 type NamespacelabelSpec struct {
+	// Labels is a map of key-value pairs that should be applied to the target namespace.
+	// The keys are the label names, and the values are the corresponding label values.
 	Labels map[string]string `json:"labels,omitempty"`
 }
 
-// NamespacelabelStatus defines the observed state of Namespacelabel object - the Namespacelabel object grant permissions for users to label their namespaces
+// NamespacelabelStatus defines the observed state of Namespacelabel
 type NamespacelabelStatus struct {
+	// AppliedLabels represents the labels that were successfully applied to the namespace.
+	// This map includes key-value pairs of all successfully applied labels.
 	AppliedLabels map[string]string `json:"appliedLabels,omitempty"`
 
+	// LastUpdated indicates the last time the status was updated.
+	// This timestamp is useful for tracking when the object was last reconciled.
 	LastUpdated metav1.Time `json:"lastUpdated,omitempty"`
 
-	// List of conditions for better tracking of status
+	// Conditions is a list of conditions that provide additional insight into the status of the Namespacelabel.
+	// Conditions can include statuses like LabelsApplied, LabelsSkipped, and others.
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// List of conditions for better tracking of status
+	// SkippedLabels represents the labels that could not be applied due to conflicts or other restrictions.
+	// This map includes key-value pairs of all labels that were skipped.
 	SkippedLabels map[string]string `json:"skippedLabels,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Namespacelabel is an object which grant the option to give permissions for user to label his namespace.
+// Namespacelabel is an object that grants permissions to users to label their namespace.
+// This object allows users to specify and manage labels for namespaces they own.
 type Namespacelabel struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -52,7 +61,7 @@ type Namespacelabel struct {
 
 // +kubebuilder:object:root=true
 
-// NamespacelabelList contains a list of Namespacelabel
+// NamespacelabelList contains a list of Namespacelabel objects.
 type NamespacelabelList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
