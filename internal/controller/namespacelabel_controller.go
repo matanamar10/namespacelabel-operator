@@ -160,8 +160,6 @@ func (r *NamespacelabelReconciler) processLabels(ctx context.Context, namespaceL
 func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel, updatedLabels, skippedLabels, duplicateLabels map[string]string) error {
 	namespaceLabel.Status.AppliedLabels = updatedLabels
 	namespaceLabel.Status.SkippedLabels = skippedLabels
-	namespaceLabel.Status.LastUpdated = metav1.Now()
-
 	if len(skippedLabels) > 0 {
 		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsSkipped", "Some labels were skipped due to being protected.")
 	} else {
