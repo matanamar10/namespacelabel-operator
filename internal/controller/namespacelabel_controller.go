@@ -41,32 +41,28 @@ type NamespacelabelReconciler struct {
 }
 
 func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	r.Log.Info("Starting reconciliation", "NamespacedName", req.NamespacedName)
 	var namespaceLabel labelsv1.Namespacelabel
 	if err := r.Get(ctx, req.NamespacedName, &namespaceLabel); err != nil {
-		r.Log.Error(err, "failed to get Namespacelabel")
 		return ctrl.Result{}, client.IgnoreNotFound(fmt.Errorf("failed to get namespace label: %w", err))
 	}
 
 	if result, err := r.handleDeletion(ctx, &namespaceLabel); err != nil {
-		r.Log.Error(err, "error during deletion handling")
 		return ctrl.Result{}, err
 	} else if result != nil {
 		return *result, nil
 	}
 
 	if err := r.ensureFinalizer(ctx, &namespaceLabel); err != nil {
-		r.Log.Error(err, "failed to ensure finalizer")
 		return ctrl.Result{}, err
 	}
 
 	updatedLabels, skippedLabels, duplicateLabels, err := r.processLabels(ctx, &namespaceLabel)
 	if err != nil {
-		r.Log.Error(err, "failed to process labels")
 		return ctrl.Result{}, err
 	}
 
 	if err := r.updateStatus(ctx, &namespaceLabel, updatedLabels, skippedLabels, duplicateLabels); err != nil {
-		r.Log.Error(err, "failed to update Namespacelabel status")
 		return ctrl.Result{}, fmt.Errorf("failed to update Namespacelabel status: %w", err)
 	}
 
@@ -102,7 +98,6 @@ func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespace
 	}
 
 	if err := finalizer.Cleanup(ctx, r.Client, namespaceLabel, r.Log); err != nil {
-		r.Log.Error(err, "Error during cleanup finalizer")
 		return &ctrl.Result{}, fmt.Errorf("failed to clean up labels during finalizer: %w", err)
 	}
 	return &ctrl.Result{}, nil
@@ -178,8 +173,7 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 
 func (r *NamespacelabelReconciler) ensureFinalizer(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
 	if err := finalizer.Ensure(ctx, r.Client, namespaceLabel, r.Log); err != nil {
-		r.Log.Error(err, "Failed to ensure finalizer", "namespaceLabel", namespaceLabel.Name)
-		return fmt.Errorf("failed to add finalizer to the namespacelabel: %w", err)
+		return err
 	}
 	return nil
 }
