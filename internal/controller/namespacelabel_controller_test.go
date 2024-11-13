@@ -27,7 +27,7 @@ var _ = BeforeSuite(func() {
 		Client:   K8sClient,
 		Scheme:   Scheme,
 		Log:      ctrl.Log.WithName("controller").WithName("Namespacelabel"),
-		Recorder: nil, // Add a mock recorder if needed
+		Recorder: nil,
 	}
 })
 
