@@ -156,15 +156,15 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 	namespaceLabel.Status.AppliedLabels = updatedLabels
 	namespaceLabel.Status.SkippedLabels = skippedLabels
 	if len(skippedLabels) > 0 {
-		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsSkipped", "Some labels were skipped due to being protected.")
+		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsHandled", "Some labels were skipped because they are protected.")
 	} else {
-		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionFalse, "NoLabelsSkipped", "No labels were skipped.")
+		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionFalse, "ProtectedLabelsHandled", "All labels were applied successfully; no protected labels were skipped.")
 	}
 
 	if len(duplicateLabels) > 0 {
-		r.SetCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionTrue, "DuplicateLabelsFound", "Some labels were duplicates and not added.")
+		r.SetCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionTrue, "DuplicateLabelsHandled", "Some labels were not applied because they are duplicates.")
 	} else {
-		r.SetCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionFalse, "NoDuplicateLabels", "No duplicate labels were found.")
+		r.SetCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionFalse, "DuplicateLabelsHandled", "All labels were unique and applied successfully.")
 	}
 
 	r.SetCondition(namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
