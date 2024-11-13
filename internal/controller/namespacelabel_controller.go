@@ -97,30 +97,6 @@ func (r *NamespacelabelReconciler) SetCondition(namespaceLabel *labelsv1.Namespa
 	namespaceLabel.Status.Conditions = append(namespaceLabel.Status.Conditions, condition)
 }
 
-// CleanupNamespaceLabels removes labels from a namespace as specified by the Namespacelabel CR.
-// This function is part of the finalizer process to ensure resources are cleaned up.
-func CleanupNamespaceLabels(ctx context.Context, c client.Client, namespaceLabel labelsv1.Namespacelabel, logger logr.Logger) error {
-	logger.Info("Starting cleanup of labels from namespace", "namespace", namespaceLabel.Namespace)
-
-	var namespace corev1.Namespace
-	if err := c.Get(ctx, client.ObjectKey{Name: namespaceLabel.Namespace}, &namespace); err != nil {
-		logger.Error(err, "Failed to retrieve namespace for cleanup")
-		return err
-	}
-
-	for key := range namespaceLabel.Spec.Labels {
-		delete(namespace.Labels, key)
-	}
-
-	if err := c.Update(ctx, &namespace); err != nil {
-		logger.Error(err, "Failed to update namespace during label cleanup")
-		return err
-	}
-
-	logger.Info("Successfully cleaned up labels from namespace", "namespace", namespaceLabel.Namespace)
-	return nil
-}
-
 func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) (*ctrl.Result, error) {
 	r.Log.Info("Handling deletion for Namespacelabel", "namespace", namespaceLabel.Namespace)
 
@@ -128,7 +104,7 @@ func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespace
 		return nil, nil
 	}
 
-	if err := finalizer.CleanupFinalizer(ctx, r.Client, namespaceLabel, r.Log); err != nil {
+	if err := finalizer.Cleanup(ctx, r.Client, namespaceLabel, r.Log); err != nil {
 		r.Log.Error(err, "Error during cleanup finalizer")
 		return &ctrl.Result{}, fmt.Errorf("failed to clean up labels during finalizer: %w", err)
 	}
@@ -206,7 +182,7 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 }
 
 func (r *NamespacelabelReconciler) ensureFinalizer(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
-	if err := finalizer.EnsureFinalizer(ctx, r.Client, namespaceLabel, r.Log); err != nil {
+	if err := finalizer.Ensure(ctx, r.Client, namespaceLabel, r.Log); err != nil {
 		r.Log.Error(err, "Failed to ensure finalizer", "namespaceLabel", namespaceLabel.Name)
 		return fmt.Errorf("failed to add finalizer to the namespacelabel: %w", err)
 	}
