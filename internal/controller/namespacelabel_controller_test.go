@@ -110,6 +110,58 @@ var _ = Describe("NamespacelabelReconciler", func() {
 			Expect(fetchedLabel.Status.SkippedLabels).To(HaveKeyWithValue("protected-key", "protected-value"))
 		})
 
+		It("should handle multiple Namespacelabels and skip conflicting keys", func() {
+			secondNamespacelabel := &labelsv1.Namespacelabel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "second-namespacelabel",
+					Namespace: namespace.Name,
+				},
+				Spec: labelsv1.NamespacelabelSpec{
+					Labels: map[string]string{
+						"test-key":     "conflicting-value",
+						"new-test-key": "new-value",
+						"existing-key": "ignored-value",
+					},
+				},
+			}
+			fetchedNamespace := &corev1.Namespace{}
+			Expect(K8sClient.Get(Ctx, types.NamespacedName{Name: namespace.Name}, fetchedNamespace)).To(Succeed())
+			fetchedNamespace.Labels = map[string]string{"existing-key": "existing-value"}
+			Expect(K8sClient.Update(Ctx, fetchedNamespace)).To(Succeed())
+
+			Expect(K8sClient.Create(Ctx, secondNamespacelabel)).To(Succeed())
+
+			req1 := ctrl.Request{NamespacedName: types.NamespacedName{Name: namespacelabel.Name, Namespace: namespace.Name}}
+			req2 := ctrl.Request{NamespacedName: types.NamespacedName{Name: secondNamespacelabel.Name, Namespace: namespace.Name}}
+
+			_, err := reconciler.Reconcile(Ctx, req1)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = reconciler.Reconcile(Ctx, req2)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(K8sClient.Get(Ctx, types.NamespacedName{Name: namespace.Name}, fetchedNamespace)).To(Succeed())
+
+			Expect(fetchedNamespace.Labels).To(HaveKeyWithValue("test-key", "test-value"))
+
+			Expect(fetchedNamespace.Labels).To(HaveKeyWithValue("new-test-key", "new-value"))
+
+			Expect(fetchedNamespace.Labels).To(HaveKeyWithValue("existing-key", "existing-value")) // Pre-existing label retained
+
+			fetchedLabel1 := &labelsv1.Namespacelabel{}
+			Expect(K8sClient.Get(Ctx, req1.NamespacedName, fetchedLabel1)).To(Succeed())
+
+			fetchedLabel2 := &labelsv1.Namespacelabel{}
+			Expect(K8sClient.Get(Ctx, req2.NamespacedName, fetchedLabel2)).To(Succeed())
+
+			Expect(fetchedLabel1.Status.AppliedLabels).To(HaveKeyWithValue("test-key", "test-value"))
+			Expect(fetchedLabel1.Status.SkippedLabels).To(BeEmpty())
+
+			Expect(fetchedLabel2.Status.AppliedLabels).To(HaveKeyWithValue("new-test-key", "new-value"))
+			Expect(fetchedLabel2.Status.SkippedLabels).To(HaveKeyWithValue("test-key", "conflicting-value"))
+			Expect(fetchedLabel2.Status.SkippedLabels).To(HaveKeyWithValue("existing-key", "ignored-value"))
+		})
+
 		It("should handle deletion of Namespacelabel", func() {
 			Expect(K8sClient.Delete(Ctx, namespacelabel)).To(Succeed())
 
