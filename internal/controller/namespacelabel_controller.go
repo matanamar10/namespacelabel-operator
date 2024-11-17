@@ -195,7 +195,6 @@ func (r *NamespacelabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // enqueueRequestsFromNamespace triggers reconciliation for related Namespacelabel resources when a Namespace changes.
 // enqueueRequestsFromNamespace reconciles the Namespacelabel when the associated Namespace changes.
 func (r *NamespacelabelReconciler) enqueueRequestsFromNamespace(ctx context.Context, namespace client.Object) []reconcile.Request {
-	// Cast the client.Object to a Namespace
 	ns, ok := namespace.(*corev1.Namespace)
 	if !ok {
 		r.Log.Error(nil, "Failed to cast object to Namespace", "object", namespace)
