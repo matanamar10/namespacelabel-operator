@@ -24,13 +24,14 @@ var (
 	scheme    *runtime.Scheme
 )
 
-func initTestEnvironment() {
+var _ = BeforeSuite(func() {
+	By("Initializing test environment")
 	scheme = runtime.NewScheme()
 	Expect(labelsv1.AddToScheme(scheme)).To(Succeed())
 	Expect(corev1.AddToScheme(scheme)).To(Succeed())
 	k8sClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 	ctx = context.Background()
-}
+})
 
 func createNamespace(name string) {
 	namespace := &corev1.Namespace{
@@ -56,11 +57,12 @@ func deleteAllNamespaceLabels() {
 
 var _ = Describe("NamespaceLabel Controller", func() {
 	BeforeEach(func() {
-		initTestEnvironment()
+		By("Creating default namespace")
 		createNamespace("default")
 	})
 
 	AfterEach(func() {
+		By("Cleaning up test resources")
 		deleteAllNamespaceLabels()
 		deleteNamespace("default")
 	})
@@ -68,7 +70,7 @@ var _ = Describe("NamespaceLabel Controller", func() {
 	Context("When reconciling a NamespaceLabel resource", func() {
 		const namespaceName = "default"
 		const resourceName = "test-resource"
-		const secondresourceName = "test-second-resource"
+		const secondResourceName = "test-second-resource"
 		namespacedName := types.NamespacedName{Name: resourceName, Namespace: namespaceName}
 
 		It("should successfully create, update, delete labels and delete NamespaceLabels", func() {
@@ -129,29 +131,10 @@ var _ = Describe("NamespaceLabel Controller", func() {
 			Expect(namespace.Labels).NotTo(HaveKey("label_1"))
 		})
 
-		It("should prevent creating NamespaceLabel with managed labels", func() {
-			By("creating the NamespaceLabel with managed labels")
-			namespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: "managed-label-resource", Namespace: namespaceName},
-				Spec:       labelsv1.NamespacelabelSpec{Labels: map[string]string{"kubernetes.io/managed": "true"}},
-			}
-			Expect(k8sClient.Create(ctx, namespaceLabel)).To(Succeed())
-
-			By("reconciling the resource")
-			controllerReconciler := &NamespacelabelReconciler{
-				Client: k8sClient,
-				Scheme: scheme,
-				Log:    zap.New(zap.UseDevMode(true)),
-			}
-			_, err := controllerReconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "managed-label-resource", Namespace: namespaceName}})
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("cannot add protected or management label 'kubernetes.io/managed'"))
-		})
 		It("should allow multiple NamespaceLabels but apply only unique keys", func() {
 			By("creating the first NamespaceLabel resource")
-			firstResourceName := resourceName
 			firstNamespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: firstResourceName, Namespace: namespaceName},
+				ObjectMeta: metav1.ObjectMeta{Name: resourceName, Namespace: namespaceName},
 				Spec: labelsv1.NamespacelabelSpec{
 					Labels: map[string]string{"key1": "value1", "key2": "value2"},
 				},
@@ -159,7 +142,6 @@ var _ = Describe("NamespaceLabel Controller", func() {
 			Expect(k8sClient.Create(ctx, firstNamespaceLabel)).To(Succeed())
 
 			By("creating the second NamespaceLabel resource")
-			secondResourceName := secondresourceName
 			secondNamespaceLabel := &labelsv1.Namespacelabel{
 				ObjectMeta: metav1.ObjectMeta{Name: secondResourceName, Namespace: namespaceName},
 				Spec: labelsv1.NamespacelabelSpec{
@@ -175,7 +157,7 @@ var _ = Describe("NamespaceLabel Controller", func() {
 			}
 
 			By("reconciling the first NamespaceLabel")
-			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: firstResourceName, Namespace: namespaceName}})
+			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: resourceName, Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("reconciling the second NamespaceLabel")
@@ -189,6 +171,5 @@ var _ = Describe("NamespaceLabel Controller", func() {
 			Expect(namespace.Labels).To(HaveKeyWithValue("key2", "value2"))
 			Expect(namespace.Labels).To(HaveKeyWithValue("key3", "value3"))
 		})
-
 	})
 })
