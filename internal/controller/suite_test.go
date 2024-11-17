@@ -1,51 +1,54 @@
-package controller_test
+/*
+Copyright 2024.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controller
 
 import (
-	"context"
-	"path/filepath"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"testing"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	kScheme "k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
+	// +kubebuilder:scaffold:imports
 )
 
-var (
-	TestEnv   *envtest.Environment
-	K8sClient client.Client
-	Ctx       context.Context
-	Scheme    = runtime.NewScheme()
-	Cancel    context.CancelFunc
-)
+// These tests use Ginkgo (BDD-style Go testing framework). Refer to
+// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-// Initialize the shared environment for tests
-func Init() {
-	Ctx, Cancel = context.WithCancel(context.TODO())
+func TestControllers(t *testing.T) {
+	RegisterFailHandler(Fail)
 
-	TestEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
-	}
-
-	cfg, err := TestEnv.Start()
-	if err != nil {
-		panic(err)
-	}
-
-	utilruntime.Must(clientgoscheme.AddToScheme(Scheme))
-
-	K8sClient, err = client.New(cfg, client.Options{Scheme: Scheme})
-	if err != nil {
-		panic(err)
-	}
+	RunSpecs(t, "Controller Suite")
 }
 
-// Teardown cleans up the testing environment
-func Teardown() {
-	Cancel()
-	if TestEnv != nil {
-		if err := TestEnv.Stop(); err != nil {
-			panic(err)
-		}
-	}
-}
+var _ = BeforeSuite(func() {
+	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter)))
+
+	By("setting up fake client")
+	scheme := kScheme.Scheme
+	Expect(labelsv1.AddToScheme(scheme)).To(Succeed())
+
+	k8sClient = fake.NewClientBuilder().WithScheme(scheme).Build()
+})
+
+var _ = AfterSuite(func() {
+	By("tearing down the test environment")
+})
