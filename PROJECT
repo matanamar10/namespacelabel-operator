@@ -17,4 +17,7 @@ resources:
   kind: Namespacelabel
   path: github.com/matanamar10/namespacelabel-operator.git/api/v1
   version: v1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 version: "3"

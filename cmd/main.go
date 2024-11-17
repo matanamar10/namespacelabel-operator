@@ -107,6 +107,12 @@ func main() {
 		logger.Error(err, "unable to create controller", "controller", "Namespacelabel")
 		os.Exit(1)
 	}
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = (&labelsv1.Namespacelabel{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Namespacelabel")
+			os.Exit(1)
+		}
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -115,6 +121,11 @@ func main() {
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		logger.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
+
+	if err := (&labelsv1.Namespacelabel{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook for NamespaceLabel")
 		os.Exit(1)
 	}
 
