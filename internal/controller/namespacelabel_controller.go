@@ -29,7 +29,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 // NamespacelabelReconciler reconciles a Namespacelabel object
@@ -179,10 +183,46 @@ func (r *NamespacelabelReconciler) ensureFinalizer(ctx context.Context, namespac
 }
 
 func (r *NamespacelabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.Recorder = mgr.GetEventRecorderFor("NamespacelabelController")
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&labelsv1.Namespacelabel{}).
-		Owns(&corev1.Namespace{}).
+		Watches(&corev1.Namespace{},
+			handler.EnqueueRequestsFromMapFunc(r.enqueueRequestsFromNamespace),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Complete(r)
+}
+
+// enqueueRequestsFromNamespace triggers reconciliation for related Namespacelabel resources when a Namespace changes.
+// enqueueRequestsFromNamespace reconciles the Namespacelabel when the associated Namespace changes.
+func (r *NamespacelabelReconciler) enqueueRequestsFromNamespace(ctx context.Context, namespace client.Object) []reconcile.Request {
+	// Cast the client.Object to a Namespace
+	ns, ok := namespace.(*corev1.Namespace)
+	if !ok {
+		r.Log.Error(nil, "Failed to cast object to Namespace", "object", namespace)
+		return []reconcile.Request{}
+	}
+
+	namespaceLabelList := &labelsv1.NamespacelabelList{}
+	listOps := &client.ListOptions{
+		Namespace: ns.Name,
+	}
+	if err := r.List(ctx, namespaceLabelList, listOps); err != nil {
+		r.Log.Error(err, "Failed to list Namespacelabel resources", "Namespace", ns.Name)
+		return []reconcile.Request{}
+	}
+
+	var requests []reconcile.Request
+	for _, item := range namespaceLabelList.Items {
+		if item.Namespace == ns.Name {
+			requests = append(requests, reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      item.Name,
+					Namespace: item.Namespace,
+				},
+			})
+		}
+	}
+
+	r.Log.Info("Enqueued reconciliation requests", "Namespace", ns.Name, "RequestCount", len(requests))
+	return requests
 }
