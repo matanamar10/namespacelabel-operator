@@ -21,6 +21,7 @@ limitations under the License.
 package v1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -115,7 +116,13 @@ func (in *NamespacelabelStatus) DeepCopyInto(out *NamespacelabelStatus) {
 			(*out)[key] = val
 		}
 	}
-	in.LastUpdated.DeepCopyInto(&out.LastUpdated)
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]metav1.Condition, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.SkippedLabels != nil {
 		in, out := &in.SkippedLabels, &out.SkippedLabels
 		*out = make(map[string]string, len(*in))
