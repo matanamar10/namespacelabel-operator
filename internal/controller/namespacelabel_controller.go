@@ -118,7 +118,6 @@ func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespace
 
 func (r *NamespacelabelReconciler) updateNamespace(ctx context.Context, namespace *corev1.Namespace) error {
 	if err := r.Update(ctx, namespace); err != nil {
-		r.Log.Error(err, "Failed to update namespace with new labels")
 		return fmt.Errorf("failed to update namespace: %w", err)
 	}
 	return nil
