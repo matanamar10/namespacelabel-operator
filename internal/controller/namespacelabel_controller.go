@@ -202,14 +202,12 @@ func (r *NamespacelabelReconciler) enqueueRequestsFromNamespace(ctx context.Cont
 
 	var requests []reconcile.Request
 	for _, item := range namespaceLabelList.Items {
-		if item.Namespace == ns.Name {
-			requests = append(requests, reconcile.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      item.Name,
-					Namespace: item.Namespace,
-				},
-			})
-		}
+		requests = append(requests, reconcile.Request{
+			NamespacedName: types.NamespacedName{
+				Name:      item.Name,
+				Namespace: item.Namespace,
+			},
+		})
 	}
 
 	r.Log.Info("Enqueued reconciliation requests", "Namespace", ns.Name, "RequestCount", len(requests))
