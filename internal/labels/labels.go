@@ -1,4 +1,4 @@
-package namespacelabels
+package labels
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// The ProtectedLabelsEnv const is represent the protected labels for all the namespaces in the k8s cluster.
+// The ProtectedLabelsEnv const is represented the protected labels for all the namespaces in the k8s cluster.
 // Those labels keys and values can't be overridden by any namespacelabel object in any namespace.
 const ProtectedLabelsEnv = "PROTECTED_LABELS"
 

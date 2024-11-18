@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	"github.com/matanamar10/namespacelabel-operator/internal/finalizer"
-	loadprotectedlabels "github.com/matanamar10/namespacelabel-operator/internal/utility-packages"
+	labels "github.com/matanamar10/namespacelabel-operator/internal/labels"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,7 +63,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	protectedLabels, err := loadprotectedlabels.LoadProtectedLabels(r.Log)
+	protectedLabels, err := labels.LoadProtectedLabels(r.Log)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to load the protected labels list: %w", err)
 	}

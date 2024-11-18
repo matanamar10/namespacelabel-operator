@@ -3,7 +3,7 @@ package finalizer
 import (
 	"context"
 	"fmt"
-	cleanup "github.com/matanamar10/namespacelabel-operator/internal/utility-packages"
+	cleanup "github.com/matanamar10/namespacelabel-operator/internal/labels"
 
 	"github.com/go-logr/logr"
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
