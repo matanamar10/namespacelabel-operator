@@ -26,3 +26,7 @@ go.work
 *.swo
 *~
 .env
+
+# Webhook code
+/api/v1/namespacelabel_webhook.go
+/api/v1/namespacelabel_webhook_test.go
