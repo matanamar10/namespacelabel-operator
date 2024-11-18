@@ -78,6 +78,11 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	for key, value := range updatedLabels {
 		namespace.Labels[key] = value
 	}
+
+	if err := r.updateNamespace(ctx, namespace); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	if err := r.updateStatus(ctx, &namespaceLabel, updatedLabels, skippedLabels, duplicateLabels); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update Namespacelabel status: %w", err)
 	}
@@ -125,7 +130,6 @@ func (r *NamespacelabelReconciler) updateNamespace(ctx context.Context, namespac
 
 func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, namespaceLabel *labelsv1.Namespacelabel, protectedLabels map[string]string) (updatedLabels map[string]string, skippedLabels map[string]string, duplicateLabels map[string]string) {
 	r.Log.Info("Processing labels for Namespacelabel", "namespace", namespaceLabel.Namespace)
-
 	for key, value := range namespaceLabel.Spec.Labels {
 		switch {
 		case protectedLabels[key] != "":
