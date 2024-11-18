@@ -21,13 +21,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	kScheme "k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -39,16 +32,6 @@ func TestControllers(t *testing.T) {
 
 	RunSpecs(t, "Controller Suite")
 }
-
-var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter)))
-
-	By("setting up fake client")
-	scheme := kScheme.Scheme
-	Expect(labelsv1.AddToScheme(scheme)).To(Succeed())
-
-	k8sClient = fake.NewClientBuilder().WithScheme(scheme).Build()
-})
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
