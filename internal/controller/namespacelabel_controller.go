@@ -22,7 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	"github.com/matanamar10/namespacelabel-operator/internal/finalizer"
-	labels "github.com/matanamar10/namespacelabel-operator/internal/labels"
+	"github.com/matanamar10/namespacelabel-operator/internal/labels"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
