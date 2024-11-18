@@ -98,7 +98,6 @@ func (r *NamespacelabelReconciler) SetCondition(namespaceLabel *labelsv1.Namespa
 		LastTransitionTime: metav1.Now(),
 	}
 
-	// Use the Kubernetes utility function to manage conditions
 	meta.SetStatusCondition(&namespaceLabel.Status.Conditions, condition)
 }
 
