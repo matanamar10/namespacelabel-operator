@@ -210,7 +210,8 @@ func (r *NamespacelabelReconciler) enqueueRequestsFromNamespace(ctx context.Cont
 		return []reconcile.Request{}
 	}
 
-	var requests []reconcile.Request
+	// Pre-allocate the slice with the expected number of items
+	requests := make([]reconcile.Request, 0, len(namespaceLabelList.Items))
 	for _, item := range namespaceLabelList.Items {
 		requests = append(requests, reconcile.Request{
 			NamespacedName: types.NamespacedName{
