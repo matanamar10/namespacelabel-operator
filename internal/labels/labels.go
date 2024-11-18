@@ -1,9 +1,10 @@
 package labels
 
 import (
+	"fmt"
+
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-logr/logr"
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"

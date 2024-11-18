@@ -1,8 +1,9 @@
 package finalizer
 
 import (
-	"context"
 	"fmt"
+
+	"context"
 	cleanup "github.com/matanamar10/namespacelabel-operator/internal/labels"
 
 	"github.com/go-logr/logr"
