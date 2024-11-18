@@ -124,12 +124,18 @@ func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespace
 func (r *NamespacelabelReconciler) updateNamespace(ctx context.Context, namespace *corev1.Namespace) error {
 	if err := r.Update(ctx, namespace); err != nil {
 		return fmt.Errorf("failed to update namespace: %w", err)
+	} else {
+		return nil
 	}
-	return nil
 }
 
 func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, namespaceLabel *labelsv1.Namespacelabel, protectedLabels map[string]string) (updatedLabels map[string]string, skippedLabels map[string]string, duplicateLabels map[string]string) {
 	r.Log.Info("Processing labels for Namespacelabel", "namespace", namespaceLabel.Namespace)
+
+	updatedLabels = make(map[string]string)
+	skippedLabels = make(map[string]string)
+	duplicateLabels = make(map[string]string)
+
 	for key, value := range namespaceLabel.Spec.Labels {
 		switch {
 		case protectedLabels[key] != "":
