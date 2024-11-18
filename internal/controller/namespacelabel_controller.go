@@ -24,6 +24,7 @@ import (
 	"github.com/matanamar10/namespacelabel-operator/internal/finalizer"
 	loadprotectedlabels "github.com/matanamar10/namespacelabel-operator/internal/utility-packages"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -97,14 +98,8 @@ func (r *NamespacelabelReconciler) SetCondition(namespaceLabel *labelsv1.Namespa
 		LastTransitionTime: metav1.Now(),
 	}
 
-	for i, cond := range namespaceLabel.Status.Conditions {
-		if cond.Type == conditionType {
-			namespaceLabel.Status.Conditions[i] = condition
-			return
-		}
-	}
-
-	namespaceLabel.Status.Conditions = append(namespaceLabel.Status.Conditions, condition)
+	// Use the Kubernetes utility function to manage conditions
+	meta.SetStatusCondition(&namespaceLabel.Status.Conditions, condition)
 }
 
 func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) (ctrl.Result, error) {
