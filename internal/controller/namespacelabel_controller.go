@@ -51,21 +51,34 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(fmt.Errorf("failed to get namespace label: %w", err))
 	}
 
-	if result, err := r.handleDeletion(ctx, &namespaceLabel); err != nil {
-		return ctrl.Result{}, err
-	} else if result != nil {
-		return *result, nil
+	if !namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
+		if result, err := r.handleDeletion(ctx, &namespaceLabel); err != nil {
+			return ctrl.Result{}, err
+		} else if result != nil {
+			return *result, nil
+		}
 	}
 
 	if err := r.ensureFinalizer(ctx, &namespaceLabel); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	updatedLabels, skippedLabels, duplicateLabels, err := r.processLabels(ctx, &namespaceLabel)
+	protectedLabels, err := loadprotectedlabels.LoadProtectedLabels(r.Log)
+	if err != nil {
+		r.Log.Error(err, "Failed to load protected labels")
+		return ctrl.Result{}, fmt.Errorf("failed to load the protected labels list: %w", err)
+	}
+
+	namespace, err := r.fetchNamespace(ctx, namespaceLabel.Namespace)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
+	updatedLabels, skippedLabels, duplicateLabels := r.processLabels(namespace, &namespaceLabel, protectedLabels)
+
+	for key, value := range updatedLabels {
+		namespace.Labels[key] = value
+	}
 	if err := r.updateStatus(ctx, &namespaceLabel, updatedLabels, skippedLabels, duplicateLabels); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update Namespacelabel status: %w", err)
 	}
@@ -96,31 +109,31 @@ func (r *NamespacelabelReconciler) SetCondition(namespaceLabel *labelsv1.Namespa
 
 func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) (*ctrl.Result, error) {
 	r.Log.Info("Handling deletion for Namespacelabel", "namespace", namespaceLabel.Namespace)
-
-	if namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
-		return nil, nil
-	}
-
 	if err := finalizer.Cleanup(ctx, r.Client, namespaceLabel, r.Log); err != nil {
 		return &ctrl.Result{}, fmt.Errorf("failed to clean up labels during finalizer: %w", err)
 	}
 	return &ctrl.Result{}, nil
 }
 
-func (r *NamespacelabelReconciler) processLabels(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) (map[string]string, map[string]string, map[string]string, error) {
-	r.Log.Info("Processing labels for Namespacelabel", "namespace", namespaceLabel.Namespace)
-
+func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespaceName string) (*corev1.Namespace, error) {
 	var namespace corev1.Namespace
-	if err := r.Get(ctx, types.NamespacedName{Name: namespaceLabel.Namespace}, &namespace); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: namespaceName}, &namespace); err != nil {
 		r.Log.Error(err, "Failed to get namespace")
-		return nil, nil, nil, fmt.Errorf("failed to get namespace: %w", err)
+		return nil, fmt.Errorf("failed to get namespace: %w", err)
 	}
+	return &namespace, nil
+}
 
-	protectedLabels, err := loadprotectedlabels.LoadProtectedLabels(r.Log)
-	if err != nil {
-		r.Log.Error(err, "Failed to load protected labels")
-		return nil, nil, nil, fmt.Errorf("failed to load the protected labels list: %w", err)
+func (r *NamespacelabelReconciler) updateNamespace(ctx context.Context, namespace *corev1.Namespace) error {
+	if err := r.Update(ctx, namespace); err != nil {
+		r.Log.Error(err, "Failed to update namespace with new labels")
+		return fmt.Errorf("failed to update namespace: %w", err)
 	}
+	return nil
+}
+
+func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, namespaceLabel *labelsv1.Namespacelabel, protectedLabels map[string]string) (map[string]string, map[string]string, map[string]string) {
+	r.Log.Info("Processing labels for Namespacelabel", "namespace", namespaceLabel.Namespace)
 
 	updatedLabels := make(map[string]string)
 	skippedLabels := make(map[string]string)
@@ -143,17 +156,7 @@ func (r *NamespacelabelReconciler) processLabels(ctx context.Context, namespaceL
 			updatedLabels[key] = value
 		}
 	}
-
-	for key, value := range updatedLabels {
-		namespace.Labels[key] = value
-	}
-
-	if err := r.Update(ctx, &namespace); err != nil {
-		r.Log.Error(err, "Failed to update namespace with new labels")
-		return nil, nil, nil, fmt.Errorf("failed to update namespace: %w", err)
-	}
-
-	return updatedLabels, skippedLabels, duplicateLabels, nil
+	return updatedLabels, skippedLabels, duplicateLabels
 }
 
 func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel, updatedLabels, skippedLabels, duplicateLabels map[string]string) error {
