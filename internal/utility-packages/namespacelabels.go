@@ -11,9 +11,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// The ProtectedLabelsEnv const is represent the protected labels for all the namespaces in the k8s cluster.
+// Those labels keys and values can't be overridden by any namespacelabel object in any namespace.
+const ProtectedLabelsEnv = "PROTECTED_LABELS"
+
 // LoadProtectedLabels loads a set of "protected" labels from an environment variable.
 func LoadProtectedLabels(logger logr.Logger) (map[string]string, error) {
-	protectedLabelsJSON := os.Getenv("PROTECTED_LABELS")
+	protectedLabelsJSON := os.Getenv(ProtectedLabelsEnv)
 	if protectedLabelsJSON == "" {
 		logger.Info("PROTECTED_LABELS environment variable is not set")
 		return nil, fmt.Errorf("PROTECTED_LABELS environment variable is not set")
