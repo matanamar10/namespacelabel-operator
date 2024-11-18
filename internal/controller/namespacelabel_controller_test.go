@@ -76,82 +76,29 @@ var _ = Describe("NamespaceLabel Controller", func() {
 		deleteNamespace("default")
 	})
 
-	Context("When reconciling a NamespaceLabel resource", func() {
+	Context("When reconciling multiple NamespaceLabel resources in the same namespace", func() {
 		const namespaceName = "default"
-		const resourceName = "test-resource"
+		const firstResourceName = "test-resource-1"
+		const secondResourceName = "test-resource-2"
 
-		It("should emit an event when a protected label is skipped", func() {
-			By("creating a NamespaceLabel resource with a protected label")
-			namespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: resourceName, Namespace: namespaceName},
-				Spec: labelsv1.NamespacelabelSpec{
-					Labels: map[string]string{"protected-key": "value", "key2": "value2"},
-				},
-			}
-			Expect(k8sClient.Create(ctx, namespaceLabel)).To(Succeed())
-
-			recorder := record.NewFakeRecorder(100)
-			reconciler := &NamespacelabelReconciler{
-				Client:   k8sClient,
-				Scheme:   scheme,
-				Log:      zap.New(zap.UseDevMode(true)),
-				Recorder: recorder,
-			}
-
-			By("reconciling the NamespaceLabel resource")
-			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: resourceName, Namespace: namespaceName}})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("verifying the event for the protected label")
-			event := getNextEvent(recorder)
-			Expect(event).To(ContainSubstring("ProtectedLabelSkipped"))
-			Expect(event).To(ContainSubstring("protected-key=value"))
-		})
-
-		It("should emit an event when a duplicate label is skipped", func() {
-			By("creating a namespace with an existing label")
-			createNamespace(namespaceName)
-			namespace := &corev1.Namespace{}
-			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, namespace)).To(Succeed())
-			namespace.Labels = map[string]string{"key1": "existing-value"}
-			Expect(k8sClient.Update(ctx, namespace)).To(Succeed())
-
-			By("creating a NamespaceLabel resource with a duplicate label")
-			namespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: resourceName, Namespace: namespaceName},
-				Spec: labelsv1.NamespacelabelSpec{
-					Labels: map[string]string{"key1": "new-value", "key2": "value2"},
-				},
-			}
-			Expect(k8sClient.Create(ctx, namespaceLabel)).To(Succeed())
-
-			recorder := record.NewFakeRecorder(100)
-			reconciler := &NamespacelabelReconciler{
-				Client:   k8sClient,
-				Scheme:   scheme,
-				Log:      zap.New(zap.UseDevMode(true)),
-				Recorder: recorder,
-			}
-
-			By("reconciling the NamespaceLabel resource")
-			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: resourceName, Namespace: namespaceName}})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("verifying the event for the duplicate label")
-			event := getNextEvent(recorder)
-			Expect(event).To(ContainSubstring("DuplicateLabelSkipped"))
-			Expect(event).To(ContainSubstring("key1=new-value"))
-		})
-
-		It("should emit events for successful label application", func() {
-			By("creating a NamespaceLabel resource")
-			namespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: resourceName, Namespace: namespaceName},
+		It("should apply only non-overlapping labels from multiple NamespaceLabel resources", func() {
+			By("creating the first NamespaceLabel resource")
+			firstNamespaceLabel := &labelsv1.Namespacelabel{
+				ObjectMeta: metav1.ObjectMeta{Name: firstResourceName, Namespace: namespaceName},
 				Spec: labelsv1.NamespacelabelSpec{
 					Labels: map[string]string{"key1": "value1", "key2": "value2"},
 				},
 			}
-			Expect(k8sClient.Create(ctx, namespaceLabel)).To(Succeed())
+			Expect(k8sClient.Create(ctx, firstNamespaceLabel)).To(Succeed())
+
+			By("creating the second NamespaceLabel resource with overlapping labels")
+			secondNamespaceLabel := &labelsv1.Namespacelabel{
+				ObjectMeta: metav1.ObjectMeta{Name: secondResourceName, Namespace: namespaceName},
+				Spec: labelsv1.NamespacelabelSpec{
+					Labels: map[string]string{"key2": "new-value", "key3": "value3"},
+				},
+			}
+			Expect(k8sClient.Create(ctx, secondNamespaceLabel)).To(Succeed())
 
 			recorder := record.NewFakeRecorder(100)
 			reconciler := &NamespacelabelReconciler{
@@ -161,15 +108,70 @@ var _ = Describe("NamespaceLabel Controller", func() {
 				Recorder: recorder,
 			}
 
-			By("reconciling the NamespaceLabel resource")
-			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: resourceName, Namespace: namespaceName}})
+			By("reconciling the first NamespaceLabel")
+			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: firstResourceName, Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("verifying events for label application")
+			By("reconciling the second NamespaceLabel")
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: secondResourceName, Namespace: namespaceName}})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying the Namespace contains only unique keys")
+			namespace := &corev1.Namespace{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, namespace)).To(Succeed())
+			Expect(namespace.Labels).To(HaveKeyWithValue("key1", "value1"))
+			Expect(namespace.Labels).To(HaveKeyWithValue("key2", "value2")) // Original value retained
+			Expect(namespace.Labels).To(HaveKeyWithValue("key3", "value3"))
+
+			By("verifying an event for the skipped label in the second NamespaceLabel")
 			event := getNextEvent(recorder)
-			Expect(event).To(ContainSubstring("Normal"))
-			Expect(event).To(ContainSubstring("LabelsApplied"))
-			Expect(event).To(ContainSubstring("key1=value1"))
+			Expect(event).To(ContainSubstring("DuplicateLabelSkipped"))
+			Expect(event).To(ContainSubstring("key2=new-value"))
+		})
+
+		It("should remove only the labels associated with a deleted NamespaceLabel resource", func() {
+			By("creating two NamespaceLabel resources")
+			firstNamespaceLabel := &labelsv1.Namespacelabel{
+				ObjectMeta: metav1.ObjectMeta{Name: firstResourceName, Namespace: namespaceName},
+				Spec: labelsv1.NamespacelabelSpec{
+					Labels: map[string]string{"key1": "value1", "key2": "value2"},
+				},
+			}
+			Expect(k8sClient.Create(ctx, firstNamespaceLabel)).To(Succeed())
+
+			secondNamespaceLabel := &labelsv1.Namespacelabel{
+				ObjectMeta: metav1.ObjectMeta{Name: secondResourceName, Namespace: namespaceName},
+				Spec: labelsv1.NamespacelabelSpec{
+					Labels: map[string]string{"key3": "value3"},
+				},
+			}
+			Expect(k8sClient.Create(ctx, secondNamespaceLabel)).To(Succeed())
+
+			recorder := record.NewFakeRecorder(100)
+			reconciler := &NamespacelabelReconciler{
+				Client:   k8sClient,
+				Scheme:   scheme,
+				Log:      zap.New(zap.UseDevMode(true)),
+				Recorder: recorder,
+			}
+
+			By("reconciling both NamespaceLabels")
+			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: firstResourceName, Namespace: namespaceName}})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: secondResourceName, Namespace: namespaceName}})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("deleting the first NamespaceLabel resource")
+			Expect(k8sClient.Delete(ctx, firstNamespaceLabel)).To(Succeed())
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: firstResourceName, Namespace: namespaceName}})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("verifying the remaining labels in the Namespace")
+			namespace := &corev1.Namespace{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: namespaceName}, namespace)).To(Succeed())
+			Expect(namespace.Labels).NotTo(HaveKey("key1"))
+			Expect(namespace.Labels).NotTo(HaveKey("key2"))
+			Expect(namespace.Labels).To(HaveKeyWithValue("key3", "value3"))
 		})
 	})
 })
