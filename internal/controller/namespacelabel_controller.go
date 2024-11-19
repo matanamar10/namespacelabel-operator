@@ -165,6 +165,7 @@ func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, na
 func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel, updatedLabels, skippedLabels, duplicateLabels map[string]string) error {
 	namespaceLabel.Status.AppliedLabels = updatedLabels
 	namespaceLabel.Status.SkippedLabels = skippedLabels
+
 	if len(skippedLabels) > 0 {
 		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsHandled", "Some labels were skipped because they are protected.")
 	} else {
@@ -178,7 +179,16 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 	}
 
 	r.SetCondition(namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
-	return r.Status().Update(ctx, namespaceLabel)
+
+	if err := r.Status().Update(ctx, namespaceLabel); err != nil {
+		if client.IgnoreNotFound(err) == nil {
+			r.Log.Info("Resource already deleted, skipping status update", "namespaceLabel", namespaceLabel.Name)
+			return nil
+		}
+		return fmt.Errorf("failed to update Namespacelabel status: %w", err)
+	}
+
+	return nil
 }
 
 func (r *NamespacelabelReconciler) ensureFinalizer(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {

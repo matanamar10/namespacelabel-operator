@@ -167,6 +167,13 @@ var _ = Describe("NamespaceLabel Controller", func() {
 
 			By("deleting the first NamespaceLabel resource")
 			Expect(k8sClient.Delete(ctx, firstNamespaceLabel)).To(Succeed())
+
+			By("verifying the first NamespaceLabel no longer exists")
+			deletedResource := &labelsv1.Namespacelabel{}
+			err = k8sClient.Get(ctx, types.NamespacedName{Name: "test-resource-unique-3", Namespace: namespaceName}, deletedResource)
+			Expect(client.IgnoreNotFound(err)).To(Succeed())
+
+			By("reconciling after deletion of the first NamespaceLabel")
 			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-resource-unique-3", Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
 
