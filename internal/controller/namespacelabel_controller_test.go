@@ -73,6 +73,7 @@ var _ = Describe("NamespaceLabel Controller", func() {
 	BeforeEach(func() {
 		By("Creating default namespace")
 		createNamespace("default")
+		deleteAllNamespaceLabels()
 	})
 
 	AfterEach(func() {
@@ -83,13 +84,11 @@ var _ = Describe("NamespaceLabel Controller", func() {
 
 	Context("When reconciling multiple NamespaceLabel resources in the same namespace", func() {
 		const namespaceName = "default"
-		const firstResourceName = "test-resource-1"
-		const secondResourceName = "test-resource-2"
 
 		It("should apply only non-overlapping labels from multiple NamespaceLabel resources", func() {
 			By("creating the first NamespaceLabel resource")
 			firstNamespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: firstResourceName, Namespace: namespaceName},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-resource-unique-1", Namespace: namespaceName},
 				Spec: labelsv1.NamespacelabelSpec{
 					Labels: map[string]string{"key1": "value1", "key2": "value2"},
 				},
@@ -98,7 +97,7 @@ var _ = Describe("NamespaceLabel Controller", func() {
 
 			By("creating the second NamespaceLabel resource with overlapping labels")
 			secondNamespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: secondResourceName, Namespace: namespaceName},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-resource-unique-2", Namespace: namespaceName},
 				Spec: labelsv1.NamespacelabelSpec{
 					Labels: map[string]string{"key2": "new-value", "key3": "value3"},
 				},
@@ -114,11 +113,11 @@ var _ = Describe("NamespaceLabel Controller", func() {
 			}
 
 			By("reconciling the first NamespaceLabel")
-			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: firstResourceName, Namespace: namespaceName}})
+			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-resource-unique-1", Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("reconciling the second NamespaceLabel")
-			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: secondResourceName, Namespace: namespaceName}})
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-resource-unique-2", Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("verifying the Namespace contains only unique keys")
@@ -137,7 +136,7 @@ var _ = Describe("NamespaceLabel Controller", func() {
 		It("should remove only the labels associated with a deleted NamespaceLabel resource", func() {
 			By("creating two NamespaceLabel resources")
 			firstNamespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: firstResourceName, Namespace: namespaceName},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-resource-unique-3", Namespace: namespaceName},
 				Spec: labelsv1.NamespacelabelSpec{
 					Labels: map[string]string{"key1": "value1", "key2": "value2"},
 				},
@@ -145,7 +144,7 @@ var _ = Describe("NamespaceLabel Controller", func() {
 			Expect(k8sClient.Create(ctx, firstNamespaceLabel)).To(Succeed())
 
 			secondNamespaceLabel := &labelsv1.Namespacelabel{
-				ObjectMeta: metav1.ObjectMeta{Name: secondResourceName, Namespace: namespaceName},
+				ObjectMeta: metav1.ObjectMeta{Name: "test-resource-unique-4", Namespace: namespaceName},
 				Spec: labelsv1.NamespacelabelSpec{
 					Labels: map[string]string{"key3": "value3"},
 				},
@@ -161,14 +160,14 @@ var _ = Describe("NamespaceLabel Controller", func() {
 			}
 
 			By("reconciling both NamespaceLabels")
-			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: firstResourceName, Namespace: namespaceName}})
+			_, err := reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-resource-unique-3", Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
-			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: secondResourceName, Namespace: namespaceName}})
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-resource-unique-4", Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("deleting the first NamespaceLabel resource")
 			Expect(k8sClient.Delete(ctx, firstNamespaceLabel)).To(Succeed())
-			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: firstResourceName, Namespace: namespaceName}})
+			_, err = reconciler.Reconcile(ctx, ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-resource-unique-3", Namespace: namespaceName}})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("verifying the remaining labels in the Namespace")
