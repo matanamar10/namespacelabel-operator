@@ -138,6 +138,10 @@ func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, na
 	skippedLabels = make(map[string]string)
 	duplicateLabels = make(map[string]string)
 
+	if namespace.Labels == nil {
+		namespace.Labels = make(map[string]string)
+	}
+
 	for key, value := range namespaceLabel.Spec.Labels {
 		switch {
 		case protectedLabels[key] != "":
