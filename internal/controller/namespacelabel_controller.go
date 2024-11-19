@@ -56,7 +56,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if !namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
 		if err := r.handleDeletion(ctx, &namespaceLabel); err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{}, fmt.Errorf("failed to handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
