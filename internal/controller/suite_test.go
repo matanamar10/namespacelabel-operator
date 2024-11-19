@@ -17,6 +17,8 @@ limitations under the License.
 package controller
 
 import (
+	"log"
+	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -35,4 +37,8 @@ func TestControllers(t *testing.T) {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	if err := os.Unsetenv("PROTECTED_LABELS"); err != nil {
+		log.Fatalf("Failed to unset PROTECTED_LABELS environment variable: %v", err)
+	}
+
 })

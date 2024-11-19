@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"log"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,6 +33,9 @@ var _ = BeforeSuite(func() {
 	Expect(corev1.AddToScheme(scheme)).To(Succeed())
 	k8sClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 	ctx = context.Background()
+	if err := os.Setenv("PROTECTED_LABELS", `{"protected-key": "value1", "another-protected-key": "value2"}`); err != nil {
+		log.Fatalf("Failed to set PROTECTED_LABELS environment variable: %v", err)
+	}
 })
 
 func createNamespace(name string) {
