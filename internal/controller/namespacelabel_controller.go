@@ -92,7 +92,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func (r *NamespacelabelReconciler) SetCondition(namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
+func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
 	r.Log.Info("Setting condition", "type", conditionType, "status", status, "reason", reason)
 
 	condition := metav1.Condition{
@@ -167,18 +167,18 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 	namespaceLabel.Status.SkippedLabels = skippedLabels
 
 	if len(skippedLabels) > 0 {
-		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsHandled", "Some labels were skipped because they are protected.")
+		r.setCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionTrue, "ProtectedLabelsHandled", "Some labels were skipped because they are protected.")
 	} else {
-		r.SetCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionFalse, "ProtectedLabelsHandled", "All labels were applied successfully; no protected labels were skipped.")
+		r.setCondition(namespaceLabel, "LabelsSkipped", metav1.ConditionFalse, "ProtectedLabelsHandled", "All labels were applied successfully; no protected labels were skipped.")
 	}
 
 	if len(duplicateLabels) > 0 {
-		r.SetCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionTrue, "DuplicateLabelsHandled", "Some labels were not applied because they are duplicates.")
+		r.setCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionTrue, "DuplicateLabelsHandled", "Some labels were not applied because they are duplicates.")
 	} else {
-		r.SetCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionFalse, "DuplicateLabelsHandled", "All labels were unique and applied successfully.")
+		r.setCondition(namespaceLabel, "DuplicateLabels", metav1.ConditionFalse, "DuplicateLabelsHandled", "All labels were unique and applied successfully.")
 	}
 
-	r.SetCondition(namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
+	r.setCondition(namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
 
 	if err := r.Status().Update(ctx, namespaceLabel); err != nil {
 		if client.IgnoreNotFound(err) == nil {
