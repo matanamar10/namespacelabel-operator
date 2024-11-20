@@ -3,14 +3,11 @@ package labels
 import (
 	"fmt"
 
-	"context"
 	"encoding/json"
 	"os"
 
 	"github.com/go-logr/logr"
-	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // The ProtectedLabelsEnv const is represented the protected labels for all the namespaces in the k8s cluster.
@@ -34,26 +31,14 @@ func LoadProtected(logger logr.Logger) (map[string]string, error) {
 	return protectedLabels, nil
 }
 
-// Cleanup removes labels from a namespace as specified by the Namespacelabel CR.
-// This function is part of the finalizer process to ensure resources are cleaned up.
-func Cleanup(ctx context.Context, c client.Client, namespaceLabel labelsv1.Namespacelabel, logger logr.Logger) error {
-	logger.Info("Starting cleanup of labels from namespace", "namespace", namespaceLabel.Namespace)
+// Cleanup modifies the namespace's labels based on the given label map.
+func Cleanup(namespace *corev1.Namespace, labelsToRemove map[string]string, logger logr.Logger) {
+	logger.Info("Starting label cleanup", "namespace", namespace.Name)
 
-	var namespace corev1.Namespace
-	if err := c.Get(ctx, client.ObjectKey{Name: namespaceLabel.Namespace}, &namespace); err != nil {
-		logger.Error(err, "Failed to retrieve namespace for cleanup")
-		return err
-	}
-
-	for key := range namespaceLabel.Spec.Labels {
+	for key := range labelsToRemove {
+		logger.Info("Removing label", "key", key)
 		delete(namespace.Labels, key)
 	}
 
-	if err := c.Update(ctx, &namespace); err != nil {
-		logger.Error(err, "Failed to update namespace during label cleanup")
-		return err
-	}
-
-	logger.Info("Successfully cleaned up labels from namespace", "namespace", namespaceLabel.Namespace)
-	return nil
+	logger.Info("Label cleanup completed", "namespace", namespace.Name)
 }

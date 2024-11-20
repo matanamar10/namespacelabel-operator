@@ -2,6 +2,7 @@ package finalizer
 
 import (
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 
 	"context"
 
@@ -32,16 +33,28 @@ func Ensure(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, 
 
 // Cleanup actions, removing labels from the namespace associated with
 // the Namespacelabel CR, and then removes the finalizer itself.
+// Cleanup performs finalizer actions, cleaning up namespace labels and removing the finalizer.
 func Cleanup(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, logger logr.Logger) error {
 	logger.Info("Starting cleanup for Namespacelabel", "namespaceLabel", obj.Name)
 
-	if err := labels.Cleanup(ctx, c, *obj, logger); err != nil {
-		logger.Error(err, "Failed to clean up labels for Namespacelabel", "namespaceLabel", obj.Name)
-		return fmt.Errorf("failed to clean up labels: %w", err)
+	// Fetch the namespace
+	var namespace corev1.Namespace
+	if err := c.Get(ctx, client.ObjectKey{Name: obj.Namespace}, &namespace); err != nil {
+		logger.Error(err, "Failed to retrieve namespace for cleanup", "namespaceLabel", obj.Name)
+		return fmt.Errorf("failed to retrieve namespace: %w", err)
 	}
 
+	labels.Cleanup(&namespace, obj.Spec.Labels, logger)
+
+	if err := c.Update(ctx, &namespace); err != nil {
+		logger.Error(err, "Failed to update namespace after cleanup", "namespaceLabel", obj.Name)
+		return fmt.Errorf("failed to update namespace: %w", err)
+	}
+
+	// Remove the finalizer from the Namespacelabel CR
 	controllerutil.RemoveFinalizer(obj, finalizerName)
 	if err := c.Update(ctx, obj); err != nil {
+		logger.Error(err, "Failed to remove finalizer", "namespaceLabel", obj.Name)
 		return fmt.Errorf("failed to remove finalizer: %w", err)
 	}
 

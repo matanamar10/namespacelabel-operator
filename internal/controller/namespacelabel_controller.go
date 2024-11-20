@@ -118,9 +118,11 @@ func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespa
 //   - An error if the cleanup or finalizer logic fails; otherwise, nil.
 func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
 	r.Log.Info("Handling deletion for Namespacelabel", "namespace", namespaceLabel.Namespace)
+
 	if err := finalizer.Cleanup(ctx, r.Client, namespaceLabel, r.Log); err != nil {
-		return fmt.Errorf("failed to clean up labels during finalizer: %w", err)
+		return fmt.Errorf("failed to clean up during finalizer: %w", err)
 	}
+
 	return nil
 }
 
