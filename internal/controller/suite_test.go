@@ -17,8 +17,13 @@ limitations under the License.
 package controller
 
 import (
+	"context"
+	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -41,4 +46,16 @@ var _ = AfterSuite(func() {
 		log.Fatalf("Failed to unset PROTECTED_LABELS environment variable: %v", err)
 	}
 
+})
+
+var _ = BeforeSuite(func() {
+	By("Initializing test environment")
+	scheme = runtime.NewScheme()
+	Expect(labelsv1.AddToScheme(scheme)).To(Succeed())
+	Expect(corev1.AddToScheme(scheme)).To(Succeed())
+	k8sClient = fake.NewClientBuilder().WithScheme(scheme).Build()
+	ctx = context.Background()
+	if err := os.Setenv("PROTECTED_LABELS", `{"protected-key": "value1", "another-protected-key": "value2"}`); err != nil {
+		log.Fatalf("Failed to set PROTECTED_LABELS environment variable: %v", err)
+	}
 })

@@ -2,9 +2,6 @@ package controller
 
 import (
 	"context"
-	"log"
-	"os"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -16,7 +13,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
@@ -25,18 +21,6 @@ var (
 	k8sClient client.Client
 	scheme    *runtime.Scheme
 )
-
-var _ = BeforeSuite(func() {
-	By("Initializing test environment")
-	scheme = runtime.NewScheme()
-	Expect(labelsv1.AddToScheme(scheme)).To(Succeed())
-	Expect(corev1.AddToScheme(scheme)).To(Succeed())
-	k8sClient = fake.NewClientBuilder().WithScheme(scheme).Build()
-	ctx = context.Background()
-	if err := os.Setenv("PROTECTED_LABELS", `{"protected-key": "value1", "another-protected-key": "value2"}`); err != nil {
-		log.Fatalf("Failed to set PROTECTED_LABELS environment variable: %v", err)
-	}
-})
 
 func createNamespace(name string) {
 	namespace := &corev1.Namespace{
