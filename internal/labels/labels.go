@@ -17,8 +17,8 @@ import (
 // Those labels keys and values can't be overridden by any namespacelabel object in any namespace.
 const ProtectedLabelsEnv = "PROTECTED_LABELS"
 
-// LoadProtectedLabels loads a set of "protected" labels from an environment variable.
-func LoadProtectedLabels(logger logr.Logger) (map[string]string, error) {
+// LoadProtected loads a set of "protected" labels from an environment variable.
+func LoadProtected(logger logr.Logger) (map[string]string, error) {
 	protectedLabelsJSON := os.Getenv(ProtectedLabelsEnv)
 	if protectedLabelsJSON == "" {
 		logger.Info("PROTECTED_LABELS environment variable is not set")

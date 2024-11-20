@@ -5,7 +5,7 @@ import (
 
 	"context"
 
-	cleanup "github.com/matanamar10/namespacelabel-operator/internal/labels"
+	"github.com/matanamar10/namespacelabel-operator/internal/labels"
 
 	"github.com/go-logr/logr"
 	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
@@ -35,7 +35,7 @@ func Ensure(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, 
 func Cleanup(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, logger logr.Logger) error {
 	logger.Info("Starting cleanup for Namespacelabel", "namespaceLabel", obj.Name)
 
-	if err := cleanup.Cleanup(ctx, c, *obj, logger); err != nil {
+	if err := labels.Cleanup(ctx, c, *obj, logger); err != nil {
 		logger.Error(err, "Failed to clean up labels for Namespacelabel", "namespaceLabel", obj.Name)
 		return fmt.Errorf("failed to clean up labels: %w", err)
 	}

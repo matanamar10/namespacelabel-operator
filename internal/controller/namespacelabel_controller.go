@@ -65,7 +65,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	protectedLabels, err := labels.LoadProtectedLabels(r.Log)
+	protectedLabels, err := labels.LoadProtected(r.Log)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to load the protected labels list: %w", err)
 	}
