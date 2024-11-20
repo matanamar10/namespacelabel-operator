@@ -15,17 +15,17 @@ import (
 
 // FinalizerName is a constant used to define the finalizer added to Namespacelabel CRs.
 // This prevents Kubernetes from deleting the CR until the cleanup function completes.
-const FinalizerName = "namespacelabels.finalizers.dana.io"
+const finalizerName = "namespacelabels.finalizers.dana.io"
 
 // Ensure ensures that the specified finalizer is added to the Namespacelabel CR if it’s missing.
 // This makes sure that cleanup operations are triggered before deletion.
 func Ensure(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, logger logr.Logger) error {
-	if !controllerutil.ContainsFinalizer(obj, FinalizerName) {
-		controllerutil.AddFinalizer(obj, FinalizerName)
+	if !controllerutil.ContainsFinalizer(obj, finalizerName) {
+		controllerutil.AddFinalizer(obj, finalizerName)
 		if err := c.Update(ctx, obj); err != nil {
 			return fmt.Errorf("failed to add finalizer: %w", err)
 		}
-		logger.Info("Finalizer added successfully", "finalizer", FinalizerName, "namespaceLabel", obj.Name)
+		logger.Info("Finalizer added successfully", "finalizer", finalizerName, "namespaceLabel", obj.Name)
 	}
 	return nil
 }
@@ -40,11 +40,11 @@ func Cleanup(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel,
 		return fmt.Errorf("failed to clean up labels: %w", err)
 	}
 
-	controllerutil.RemoveFinalizer(obj, FinalizerName)
+	controllerutil.RemoveFinalizer(obj, finalizerName)
 	if err := c.Update(ctx, obj); err != nil {
 		return fmt.Errorf("failed to remove finalizer: %w", err)
 	}
 
-	logger.Info("Finalizer removed successfully", "finalizer", FinalizerName, "namespaceLabel", obj.Name)
+	logger.Info("Finalizer removed successfully", "finalizer", finalizerName, "namespaceLabel", obj.Name)
 	return nil
 }
