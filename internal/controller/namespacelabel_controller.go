@@ -117,7 +117,6 @@ func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespace
 func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespaceName string) (*corev1.Namespace, error) {
 	var namespace corev1.Namespace
 	if err := r.Get(ctx, types.NamespacedName{Name: namespaceName}, &namespace); err != nil {
-		r.Log.Error(err, "Failed to get namespace")
 		return nil, fmt.Errorf("failed to get namespace: %w", err)
 	}
 	return &namespace, nil
