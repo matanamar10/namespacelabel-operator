@@ -106,6 +106,16 @@ func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespa
 	meta.SetStatusCondition(&namespaceLabel.Status.Conditions, condition)
 }
 
+// handleDeletion handles the deletion of a Namespacelabel resource.
+// It performs cleanup tasks, such as removing labels from the associated Namespace,
+// and ensures that the finalizer logic is executed.
+//
+// Parameters:
+//   - ctx: The context for the request, used for cancellation and deadlines.
+//   - namespaceLabel: A pointer to the Namespacelabel resource being deleted.
+//
+// Returns:
+//   - An error if the cleanup or finalizer logic fails; otherwise, nil.
 func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
 	r.Log.Info("Handling deletion for Namespacelabel", "namespace", namespaceLabel.Namespace)
 	if err := finalizer.Cleanup(ctx, r.Client, namespaceLabel, r.Log); err != nil {
@@ -114,6 +124,16 @@ func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespace
 	return nil
 }
 
+// fetchNamespace retrieves a Namespace object by its name.
+// It fetches the Namespace resource from the Kubernetes API server using the provided client.
+//
+// Parameters:
+//   - ctx: The context for the request, allowing cancellation and deadlines.
+//   - namespaceName: The name of the Namespace to fetch.
+//
+// Returns:
+//   - A pointer to the Namespace object if found.
+//   - An error if the Namespace does not exist or the request fails.
 func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespaceName string) (*corev1.Namespace, error) {
 	var namespace corev1.Namespace
 	if err := r.Get(ctx, types.NamespacedName{Name: namespaceName}, &namespace); err != nil {
