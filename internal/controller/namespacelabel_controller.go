@@ -61,7 +61,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 
-	if err := r.ensureFinalizer(ctx, &namespaceLabel); err != nil {
+	if err := finalizer.Ensure(ctx, r.Client, &namespaceLabel, r.Log); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -81,8 +81,8 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		namespace.Labels[key] = value
 	}
 
-	if err := r.updateNamespace(ctx, namespace); err != nil {
-		return ctrl.Result{}, err
+	if err := r.Update(ctx, namespace); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to update namespace: %w", err)
 	}
 
 	if err := r.updateStatus(ctx, &namespaceLabel, updatedLabels, skippedLabels, duplicateLabels); err != nil {
@@ -120,13 +120,6 @@ func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespace
 		return nil, fmt.Errorf("failed to get namespace: %w", err)
 	}
 	return &namespace, nil
-}
-
-func (r *NamespacelabelReconciler) updateNamespace(ctx context.Context, namespace *corev1.Namespace) error {
-	if err := r.Update(ctx, namespace); err != nil {
-		return fmt.Errorf("failed to update namespace: %w", err)
-	}
-	return nil
 }
 
 func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, namespaceLabel *labelsv1.Namespacelabel, protectedLabels map[string]string) (updatedLabels map[string]string, skippedLabels map[string]string, duplicateLabels map[string]string) {
@@ -186,13 +179,6 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 		return fmt.Errorf("failed to update Namespacelabel status: %w", err)
 	}
 
-	return nil
-}
-
-func (r *NamespacelabelReconciler) ensureFinalizer(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
-	if err := finalizer.Ensure(ctx, r.Client, namespaceLabel, r.Log); err != nil {
-		return err
-	}
 	return nil
 }
 
