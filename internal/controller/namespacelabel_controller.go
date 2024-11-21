@@ -54,8 +54,9 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(fmt.Errorf("failed to get namespace label: %w", err))
 	}
 
+	r.Log.Info("Handling deletion for Namespacelabel", "namespace", namespaceLabel.Namespace)
 	if !namespaceLabel.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err := r.handleDeletion(ctx, &namespaceLabel); err != nil {
+		if err := finalizer.Cleanup(ctx, r.Client, &namespaceLabel, r.Log); err != nil {
 			return ctrl.Result{}, fmt.Errorf("failed to handle deletion: %w", err)
 		}
 		return ctrl.Result{}, nil
@@ -105,19 +106,6 @@ func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespa
 	}
 
 	meta.SetStatusCondition(&namespaceLabel.Status.Conditions, condition)
-}
-
-// handleDeletion handles the deletion of a Namespacelabel resource.
-// It performs cleanup tasks, such as removing labels from the associated Namespace,
-// and ensures that the finalizer logic is executed.
-func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
-	r.Log.Info("Handling deletion for Namespacelabel", "namespace", namespaceLabel.Namespace)
-
-	if err := finalizer.Cleanup(ctx, r.Client, namespaceLabel, r.Log); err != nil {
-		return fmt.Errorf("failed to clean up during finalizer: %w", err)
-	}
-
-	return nil
 }
 
 // fetchNamespace retrieves a Namespace object by its name.
