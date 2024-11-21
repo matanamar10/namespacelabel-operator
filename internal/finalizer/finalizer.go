@@ -37,7 +37,6 @@ func Ensure(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, 
 func Cleanup(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, logger logr.Logger) error {
 	logger.Info("Starting cleanup for Namespacelabel", "namespaceLabel", obj.Name)
 
-	// Fetch the namespace
 	var namespace corev1.Namespace
 	if err := c.Get(ctx, client.ObjectKey{Name: obj.Namespace}, &namespace); err != nil {
 		logger.Error(err, "Failed to retrieve namespace for cleanup", "namespaceLabel", obj.Name)
@@ -51,7 +50,6 @@ func Cleanup(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel,
 		return fmt.Errorf("failed to update namespace: %w", err)
 	}
 
-	// Remove the finalizer from the Namespacelabel CR
 	controllerutil.RemoveFinalizer(obj, finalizerName)
 	if err := c.Update(ctx, obj); err != nil {
 		logger.Error(err, "Failed to remove finalizer", "namespaceLabel", obj.Name)

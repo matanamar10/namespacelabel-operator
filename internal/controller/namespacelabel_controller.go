@@ -92,6 +92,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
+// The setCondition function setting the condition for the namespacelabel object.
 func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
 	r.Log.Info("Setting condition", "type", conditionType, "status", status, "reason", reason)
 
@@ -109,13 +110,6 @@ func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespa
 // handleDeletion handles the deletion of a Namespacelabel resource.
 // It performs cleanup tasks, such as removing labels from the associated Namespace,
 // and ensures that the finalizer logic is executed.
-//
-// Parameters:
-//   - ctx: The context for the request, used for cancellation and deadlines.
-//   - namespaceLabel: A pointer to the Namespacelabel resource being deleted.
-//
-// Returns:
-//   - An error if the cleanup or finalizer logic fails; otherwise, nil.
 func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel) error {
 	r.Log.Info("Handling deletion for Namespacelabel", "namespace", namespaceLabel.Namespace)
 
@@ -128,14 +122,6 @@ func (r *NamespacelabelReconciler) handleDeletion(ctx context.Context, namespace
 
 // fetchNamespace retrieves a Namespace object by its name.
 // It fetches the Namespace resource from the Kubernetes API server using the provided client.
-//
-// Parameters:
-//   - ctx: The context for the request, allowing cancellation and deadlines.
-//   - namespaceName: The name of the Namespace to fetch.
-//
-// Returns:
-//   - A pointer to the Namespace object if found.
-//   - An error if the Namespace does not exist or the request fails.
 func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespaceName string) (*corev1.Namespace, error) {
 	var namespace corev1.Namespace
 	if err := r.Get(ctx, types.NamespacedName{Name: namespaceName}, &namespace); err != nil {
@@ -144,6 +130,7 @@ func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespace
 	return &namespace, nil
 }
 
+// processLabels function is defining the labels for the namespacelabels object.
 func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, namespaceLabel *labelsv1.Namespacelabel, protectedLabels map[string]string) (updatedLabels map[string]string, skippedLabels map[string]string, duplicateLabels map[string]string) {
 	r.Log.Info("Processing labels for Namespacelabel", "namespace", namespaceLabel.Namespace)
 
@@ -175,6 +162,7 @@ func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, na
 	return updatedLabels, skippedLabels, duplicateLabels
 }
 
+// The updateStatus function is updating the status to the namespacelabel reconciled object.
 func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel, updatedLabels, skippedLabels, duplicateLabels map[string]string) error {
 	namespaceLabel.Status.AppliedLabels = updatedLabels
 	namespaceLabel.Status.SkippedLabels = skippedLabels
