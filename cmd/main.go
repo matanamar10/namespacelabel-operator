@@ -7,6 +7,8 @@ import (
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
+	"github.com/matanamar10/namespacelabel-operator/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -15,10 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
-	"github.com/matanamar10/namespacelabel-operator/internal/controller"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -71,10 +69,6 @@ func main() {
 		tlsOpts = append(tlsOpts, disableHTTP2)
 	}
 
-	webhookServer := webhook.NewServer(webhook.Options{
-		TLSOpts: tlsOpts,
-	})
-
 	metricsServerOptions := metricsserver.Options{
 		BindAddress:   metricsAddr,
 		SecureServing: secureMetrics,
@@ -88,7 +82,6 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		Metrics:                metricsServerOptions,
-		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "09f6f97c.dana.io",
