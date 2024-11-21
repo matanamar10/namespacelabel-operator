@@ -6,7 +6,7 @@ domain: dana.io
 layout:
 - go.kubebuilder.io/v4
 projectName: namespacelabel-operator
-repo: github.com/matanamar10/namespacelabel-operator.git
+repo: github.com/matanamar10/namespacelabel-operator
 resources:
 - api:
     crdVersion: v1
@@ -15,9 +15,6 @@ resources:
   domain: dana.io
   group: labels
   kind: Namespacelabel
-  path: github.com/matanamar10/namespacelabel-operator.git/api/v1
+  path: github.com/matanamar10/namespacelabel-operator/api/v1
   version: v1
-  webhooks:
-    validation: true
-    webhookVersion: v1
 version: "3"

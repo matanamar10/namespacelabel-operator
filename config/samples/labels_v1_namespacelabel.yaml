@@ -5,12 +5,5 @@ metadata:
     app.kubernetes.io/name: namespacelabel-operator
     app.kubernetes.io/managed-by: kustomize
   name: namespacelabel-sample
-  namespace: example-namespace
 spec:
-  labels:
-    environment: production
-    owner: "team-alpha"
-    project: "ecommerce-platform"
-    compliance: "gdpr-compliant"
-    version: "v1.2.3"
-    managed-by: "namespacelabel-operator"
+  # TODO(user): Add fields here
