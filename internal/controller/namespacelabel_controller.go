@@ -170,13 +170,8 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 	r.setCondition(namespaceLabel, "LabelsApplied", metav1.ConditionTrue, "LabelsReconciled", "Labels reconciled successfully.")
 
 	if err := r.Status().Update(ctx, namespaceLabel); err != nil {
-		if client.IgnoreNotFound(err) == nil {
-			r.Log.Info("Resource already deleted, skipping status update", "namespaceLabel", namespaceLabel.Name)
-			return nil
-		}
 		return fmt.Errorf("failed to update Namespacelabel status: %w", err)
 	}
-
 	return nil
 }
 
