@@ -93,7 +93,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-// The setCondition function setting the condition for the namespacelabel object.
+// setCondition function sets the condition for the namespacelabel object.
 func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
 	r.Log.Info("Setting condition", "type", conditionType, "status", status, "reason", reason)
 
@@ -185,7 +185,6 @@ func (r *NamespacelabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&labelsv1.Namespacelabel{}).
 		Watches(&corev1.Namespace{},
 			handler.EnqueueRequestsFromMapFunc(r.enqueueRequestsFromNamespace),
-			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Complete(r)
 }
