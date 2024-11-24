@@ -2,7 +2,7 @@ package finalizer
 
 import (
 	"fmt"
-	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
+	labelsv1alpha1 "github.com/matanamar10/namespacelabel-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 
 	"context"
@@ -21,7 +21,7 @@ const finalizerName = "namespacelabels.finalizers.dana.io"
 // Ensure ensures that the specified finalizer is added to the Namespacelabel CR if it’s missing.
 // This makes sure that cleanup operations are triggered before deletion.
 func Ensure(ctx context.Context, c client.Client, obj client.Object, logger logr.Logger) error {
-	namespaceLabel, ok := obj.(*labelsv1.Namespacelabel)
+	namespaceLabel, ok := obj.(*labelsv1alpha1.Namespacelabel)
 	if !ok {
 		return fmt.Errorf("unexpected type: expected *labelsv1.Namespacelabel, got %T", obj)
 	}
@@ -39,7 +39,7 @@ func Ensure(ctx context.Context, c client.Client, obj client.Object, logger logr
 // the Namespacelabel CR, and then removes the finalizer itself.
 // Cleanup performs finalizer actions, cleaning up namespace labels and removing the finalizer.
 func Cleanup(ctx context.Context, c client.Client, obj client.Object, logger logr.Logger) error {
-	namespaceLabel, ok := obj.(*labelsv1.Namespacelabel)
+	namespaceLabel, ok := obj.(*labelsv1alpha1.Namespacelabel)
 	if !ok {
 		return fmt.Errorf("unexpected type: expected *labelsv1.Namespacelabel, got %T", obj)
 	}

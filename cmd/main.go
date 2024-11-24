@@ -3,11 +3,11 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	labelsv1alpha1 "github.com/matanamar10/namespacelabel-operator/api/v1alpha1"
 	"os"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
 	"github.com/matanamar10/namespacelabel-operator/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -27,7 +27,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(labelsv1.AddToScheme(scheme))
+	utilruntime.Must(labelsv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 

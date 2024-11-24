@@ -22,7 +22,7 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	labelsv1 "github.com/matanamar10/namespacelabel-operator/api/v1"
+	labelsv1alpha1 "github.com/matanamar10/namespacelabel-operator/api/v1alpha1"
 	"github.com/matanamar10/namespacelabel-operator/internal/finalizer"
 	"github.com/matanamar10/namespacelabel-operator/internal/labels"
 	corev1 "k8s.io/api/core/v1"
@@ -47,7 +47,7 @@ type NamespacelabelReconciler struct {
 
 func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	r.Log.Info("Starting reconciliation", "NamespacedName", req.NamespacedName)
-	var namespaceLabel labelsv1.Namespacelabel
+	var namespaceLabel labelsv1alpha1.Namespacelabel
 	if err := r.Get(ctx, req.NamespacedName, &namespaceLabel); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(fmt.Errorf("failed to get namespace label: %w", err))
 	}
@@ -92,7 +92,7 @@ func (r *NamespacelabelReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 // setCondition function sets the condition for the namespacelabel object.
-func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
+func (r *NamespacelabelReconciler) setCondition(namespaceLabel *labelsv1alpha1.Namespacelabel, conditionType string, status metav1.ConditionStatus, reason, message string) {
 	r.Log.Info("Setting condition", "type", conditionType, "status", status, "reason", reason)
 
 	condition := metav1.Condition{
@@ -117,7 +117,7 @@ func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespace
 }
 
 // processLabels function is defining the labels for the namespacelabels object.
-func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, namespaceLabel *labelsv1.Namespacelabel, protectedLabels map[string]string) (updatedLabels map[string]string, skippedLabels map[string]string, duplicateLabels map[string]string) {
+func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, namespaceLabel *labelsv1alpha1.Namespacelabel, protectedLabels map[string]string) (updatedLabels map[string]string, skippedLabels map[string]string, duplicateLabels map[string]string) {
 	r.Log.Info("Processing labels for Namespacelabel", "namespace", namespaceLabel.Namespace)
 
 	updatedLabels = make(map[string]string)
@@ -149,7 +149,7 @@ func (r *NamespacelabelReconciler) processLabels(namespace *corev1.Namespace, na
 }
 
 // The updateStatus function is updating the status to the namespacelabel reconciled object.
-func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLabel *labelsv1.Namespacelabel, updatedLabels, skippedLabels, duplicateLabels map[string]string) error {
+func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLabel *labelsv1alpha1.Namespacelabel, updatedLabels, skippedLabels, duplicateLabels map[string]string) error {
 	namespaceLabel.Status.AppliedLabels = updatedLabels
 	namespaceLabel.Status.SkippedLabels = skippedLabels
 
@@ -175,7 +175,7 @@ func (r *NamespacelabelReconciler) updateStatus(ctx context.Context, namespaceLa
 
 func (r *NamespacelabelReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&labelsv1.Namespacelabel{}).
+		For(&labelsv1alpha1.Namespacelabel{}).
 		Watches(&corev1.Namespace{},
 			handler.EnqueueRequestsFromMapFunc(r.enqueueRequestsFromNamespace),
 		).
@@ -191,7 +191,7 @@ func (r *NamespacelabelReconciler) enqueueRequestsFromNamespace(ctx context.Cont
 		return []reconcile.Request{}
 	}
 
-	namespaceLabelList := &labelsv1.NamespacelabelList{}
+	namespaceLabelList := &labelsv1alpha1.NamespacelabelList{}
 	listOps := &client.ListOptions{
 		Namespace: ns.Name,
 	}
