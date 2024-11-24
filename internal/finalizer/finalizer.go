@@ -20,7 +20,7 @@ const finalizerName = "namespacelabels.finalizers.dana.io"
 
 // Ensure ensures that the specified finalizer is added to the Namespacelabel CR if it’s missing.
 // This makes sure that cleanup operations are triggered before deletion.
-func Ensure(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, logger logr.Logger) error {
+func Ensure(ctx context.Context, c client.Client, obj client.Object, logger logr.Logger) error {
 	if !controllerutil.ContainsFinalizer(obj, finalizerName) {
 		controllerutil.AddFinalizer(obj, finalizerName)
 		if err := c.Update(ctx, obj); err != nil {
@@ -34,7 +34,7 @@ func Ensure(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, 
 // Cleanup actions, removing labels from the namespace associated with
 // the Namespacelabel CR, and then removes the finalizer itself.
 // Cleanup performs finalizer actions, cleaning up namespace labels and removing the finalizer.
-func Cleanup(ctx context.Context, c client.Client, obj *labelsv1.Namespacelabel, logger logr.Logger) error {
+func Ensure(ctx context.Context, c client.Client, obj client.Object, logger logr.Logger) error {
 	logger.Info("Starting cleanup for Namespacelabel", "namespaceLabel", obj.Name)
 
 	var namespace corev1.Namespace
