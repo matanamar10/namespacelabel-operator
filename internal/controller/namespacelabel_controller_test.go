@@ -38,6 +38,11 @@ var _ = Describe("Namespacelabel Controller", func() {
 			ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
 		}
 		Expect(k8sClient.Delete(context.Background(), namespace)).To(Succeed())
+
+		Eventually(func() error {
+			return k8sClient.Get(context.Background(), types.NamespacedName{Name: namespaceName}, namespace)
+		}, timeout, interval).ShouldNot(Succeed())
+
 	})
 
 	Context("CRUD operations", func() {
@@ -63,8 +68,14 @@ var _ = Describe("Namespacelabel Controller", func() {
 			}, timeout, interval).Should(Succeed())
 
 			By("Updating the Namespacelabel")
-			createdNamespacelabel.Spec.Labels["key2"] = "value2"
-			Expect(k8sClient.Update(ctx, createdNamespacelabel)).To(Succeed())
+			Eventually(func() error {
+				latest := &labelsv1alpha1.Namespacelabel{}
+				if err := k8sClient.Get(ctx, types.NamespacedName{Name: "test-label", Namespace: namespaceName}, latest); err != nil {
+					return err
+				}
+				latest.Spec.Labels["key2"] = "value2"
+				return k8sClient.Update(ctx, latest)
+			}, timeout, interval).Should(Succeed())
 
 			By("Verifying the Namespacelabel was updated")
 			Eventually(func() string {

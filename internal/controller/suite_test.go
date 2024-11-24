@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -48,7 +49,9 @@ var _ = BeforeSuite(func() {
 			fmt.Sprintf("1.31.0-%s-%s", runtime.GOOS, runtime.GOARCH)),
 	}
 
-	var err error
+	err := os.Setenv("PROTECTED_LABELS", "protected-key1,protected-key2")
+	Expect(err).NotTo(HaveOccurred())
+
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
