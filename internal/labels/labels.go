@@ -18,14 +18,12 @@ const ProtectedLabelsEnv = "PROTECTED_LABELS"
 func LoadProtected(logger logr.Logger) (map[string]string, error) {
 	protectedLabelsJSON := os.Getenv(ProtectedLabelsEnv)
 	if protectedLabelsJSON == "" {
-		logger.Info("PROTECTED_LABELS environment variable is not set")
 		return nil, fmt.Errorf("PROTECTED_LABELS environment variable is not set")
 	}
 
 	protectedLabels := make(map[string]string)
 	if err := json.Unmarshal([]byte(protectedLabelsJSON), &protectedLabels); err != nil {
 		logger.Error(err, "failed to parse PROTECTED_LABELS")
-		return nil, err
 	}
 
 	return protectedLabels, nil
