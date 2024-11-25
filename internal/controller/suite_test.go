@@ -35,7 +35,6 @@ func TestControllers(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	// Set up the logger
 	zapLogger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
 	ctrl.SetLogger(zapLogger)
 
@@ -59,18 +58,15 @@ var _ = BeforeSuite(func() {
 	err = labelsv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	// Set up the client for tests
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	// Start the manager
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	// Setup the controller
 	err = (&NamespacelabelReconciler{
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
@@ -79,7 +75,6 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	// Run the manager
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)

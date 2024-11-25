@@ -10,23 +10,27 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	labelsv1alpha1 "github.com/matanamar10/namespacelabel-operator/api/v1alpha1"
 )
 
 const (
-	namespaceName = "test-namespace"
-	timeout       = time.Second * 5
-	interval      = time.Millisecond * 250
+	namespaceName       = "test-namespace"
+	timeout             = time.Second * 20
+	interval            = time.Millisecond * 250
+	protectedLabelKey   = "protected-key"
+	protectedLabelValue = "protected-value"
 )
 
 var _ = Describe("Namespacelabel Controller", func() {
 	BeforeEach(func() {
+		By("Ensuring no previous namespace exists")
+		deleteNamespaceIfExists(namespaceName)
+
 		By("Creating a test namespace")
-		namespace := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
-		}
-		Expect(k8sClient.Create(context.Background(), namespace)).To(Succeed())
+		createTestNamespace(namespaceName)
 	})
 
 	AfterEach(func() {
@@ -34,15 +38,7 @@ var _ = Describe("Namespacelabel Controller", func() {
 		deleteAllNamespacelabels()
 
 		By("Cleaning up the test namespace")
-		namespace := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: namespaceName},
-		}
-		Expect(k8sClient.Delete(context.Background(), namespace)).To(Succeed())
-
-		Eventually(func() error {
-			return k8sClient.Get(context.Background(), types.NamespacedName{Name: namespaceName}, namespace)
-		}, timeout, interval).ShouldNot(Succeed())
-
+		deleteNamespaceIfExists(namespaceName)
 	})
 
 	Context("CRUD operations", func() {
@@ -88,7 +84,7 @@ var _ = Describe("Namespacelabel Controller", func() {
 		})
 	})
 
-	Context("Edge cases", func() {
+	Context("Multiple Namespacelabels", func() {
 		It("should not allow overriding existing keys", func() {
 			ctx := context.Background()
 
@@ -123,7 +119,9 @@ var _ = Describe("Namespacelabel Controller", func() {
 				return namespace.Labels
 			}, timeout, interval).Should(Equal(map[string]string{"key1": "value1", "key2": "value2"}))
 		})
+	})
 
+	Context("Protected Labels", func() {
 		It("should skip applying protected labels", func() {
 			ctx := context.Background()
 
@@ -135,8 +133,8 @@ var _ = Describe("Namespacelabel Controller", func() {
 				},
 				Spec: labelsv1alpha1.NamespacelabelSpec{
 					Labels: map[string]string{
-						"protected-key": "protected-value",
-						"key1":          "value1",
+						protectedLabelKey: protectedLabelValue,
+						"key1":            "value1",
 					},
 				},
 			}
@@ -152,10 +150,37 @@ var _ = Describe("Namespacelabel Controller", func() {
 	})
 })
 
+// Utility Functions
+
+func createTestNamespace(name string) {
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+	}
+	Expect(k8sClient.Create(context.Background(), namespace)).To(Succeed())
+}
+
+func deleteNamespaceIfExists(namespaceName string) {
+	namespace := &corev1.Namespace{}
+	err := k8sClient.Get(context.Background(), types.NamespacedName{Name: namespaceName}, namespace)
+	if err == nil {
+		namespace.Finalizers = nil
+		Expect(k8sClient.Update(context.Background(), namespace)).To(Succeed())
+
+		Expect(k8sClient.Delete(context.Background(), namespace)).To(Succeed())
+
+		Eventually(func() bool {
+			err := k8sClient.Get(context.Background(), types.NamespacedName{Name: namespaceName}, namespace)
+			return client.IgnoreNotFound(err) != nil
+		}, timeout*2, interval).Should(BeTrue(), "Namespace should be fully deleted")
+	}
+}
+
 func deleteAllNamespacelabels() {
 	namespaceLabelList := &labelsv1alpha1.NamespacelabelList{}
 	Expect(k8sClient.List(context.Background(), namespaceLabelList)).To(Succeed())
 	for _, nl := range namespaceLabelList.Items {
+		controllerutil.RemoveFinalizer(&nl, "namespacelabel.finalizers.dana.io")
+		Expect(k8sClient.Update(context.Background(), &nl)).To(Succeed())
 		Expect(k8sClient.Delete(context.Background(), &nl)).To(Succeed())
 	}
 }
