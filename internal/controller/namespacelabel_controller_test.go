@@ -23,23 +23,38 @@ var _ = Describe("Namespacelabel Controller", func() {
 
 	var ctx context.Context
 
-	BeforeEach(func() {
-		ctx = context.Background()
-
-		By("Creating a test namespace")
+	createNamespace := func(name string) {
 		namespace := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: NamespaceName,
-			},
+			ObjectMeta: metav1.ObjectMeta{Name: name},
 		}
 		Expect(k8sClient.Create(ctx, namespace)).To(Succeed())
+	}
+
+	deleteNamespace := func(name string) {
+		namespace := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: name},
+		}
+		Expect(k8sClient.Delete(ctx, namespace)).To(Succeed())
+	}
+
+	deleteAllNamespaceLabels := func() {
+		namespaceLabelList := &labelsv1alpha1.NamespacelabelList{}
+		Expect(k8sClient.List(ctx, namespaceLabelList)).To(Succeed())
+		for _, nl := range namespaceLabelList.Items {
+			Expect(k8sClient.Delete(ctx, &nl)).To(Succeed())
+		}
+	}
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		By("Creating a fresh namespace for the test")
+		createNamespace(NamespaceName)
 	})
 
 	AfterEach(func() {
-		By("Cleaning up the test namespace")
-		namespace := &corev1.Namespace{}
-		Expect(k8sClient.Get(ctx, types.NamespacedName{Name: NamespaceName}, namespace)).To(Succeed())
-		Expect(k8sClient.Delete(ctx, namespace)).To(Succeed())
+		By("Cleaning up the test namespace and NamespaceLabel CRs")
+		deleteAllNamespaceLabels()
+		deleteNamespace(NamespaceName)
 	})
 
 	Context("CRUD operations", func() {
