@@ -113,6 +113,9 @@ func (r *NamespacelabelReconciler) fetchNamespace(ctx context.Context, namespace
 	if err := r.Get(ctx, types.NamespacedName{Name: namespaceName}, &namespace); err != nil {
 		return nil, fmt.Errorf("failed to get namespace: %w", err)
 	}
+	if namespace.Labels == nil {
+		namespace.Labels = make(map[string]string)
+	}
 	return &namespace, nil
 }
 
