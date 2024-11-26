@@ -3,12 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	labelsv1alpha1 "github.com/matanamar10/namespacelabel-operator/api/v1alpha1"
 	"os"
+
+	labelsv1alpha1 "github.com/matanamar10/namespacelabel-operator/api/v1alpha1"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/matanamar10/namespacelabel-operator/internal/controller"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -17,6 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/matanamar10/namespacelabel-operator/internal/controller"
+	webhooklabelsv1alpha1 "github.com/matanamar10/namespacelabel-operator/internal/webhook/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -99,6 +102,13 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		logger.Error(err, "unable to create controller", "controller", "Namespacelabel")
 		os.Exit(1)
+	}
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = webhooklabelsv1alpha1.SetupNamespacelabelWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Namespacelabel")
+			os.Exit(1)
+		}
 	}
 	// +kubebuilder:scaffold:builder
 
