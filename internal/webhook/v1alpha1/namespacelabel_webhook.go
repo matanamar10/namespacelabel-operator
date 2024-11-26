@@ -61,13 +61,19 @@ var _ webhook.CustomValidator = &NamespacelabelCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Namespacelabel.
 func (v *NamespacelabelCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	namespacelabel, ok := obj.(*labelsv1alpha1.Namespacelabel)
+	namespaceLabel, ok := obj.(*labelsv1alpha1.Namespacelabel)
 	if !ok {
-		return nil, fmt.Errorf("expected a Namespacelabel object but got %T", obj)
+		return nil, fmt.Errorf("unexpected object type: %T", obj)
 	}
-	namespacelabellog.Info("Validation for Namespacelabel upon creation", "name", namespacelabel.GetName())
 
-	// TODO(user): fill in your validation logic upon object creation.
+	existingnamespaceLabels := &labelsv1alpha1.NamespacelabelList{}
+	if err := v.Client.List(ctx, existingnamespaceLabels, client.InNamespace(namespaceLabel.Namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list NamespaceLabels: %v", err)
+	}
+
+	if len(existingnamespaceLabels.Items) > 0 {
+		return nil, fmt.Errorf("only one NamespaceLabel is allowed per namespace; found %d existing", len(existingnamespaceLabels.Items))
+	}
 
 	return nil, nil
 }
@@ -79,9 +85,6 @@ func (v *NamespacelabelCustomValidator) ValidateUpdate(ctx context.Context, oldO
 		return nil, fmt.Errorf("expected a Namespacelabel object for the newObj but got %T", newObj)
 	}
 	namespacelabellog.Info("Validation for Namespacelabel upon update", "name", namespacelabel.GetName())
-
-	// TODO(user): fill in your validation logic upon object update.
-
 	return nil, nil
 }
 
@@ -92,8 +95,5 @@ func (v *NamespacelabelCustomValidator) ValidateDelete(ctx context.Context, obj 
 		return nil, fmt.Errorf("expected a Namespacelabel object but got %T", obj)
 	}
 	namespacelabellog.Info("Validation for Namespacelabel upon deletion", "name", namespacelabel.GetName())
-
-	// TODO(user): fill in your validation logic upon object deletion.
-
 	return nil, nil
 }
