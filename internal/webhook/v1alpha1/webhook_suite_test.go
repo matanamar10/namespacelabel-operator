@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"net"
 	"path/filepath"
 	"runtime"
@@ -86,6 +87,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme := apimachineryruntime.NewScheme()
+	err = corev1.AddToScheme(scheme)
 	err = labelsv1alpha1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
