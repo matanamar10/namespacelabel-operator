@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,9 +49,10 @@ func SetupNamespacelabelWebhookWithManager(mgr ctrl.Manager) error {
 // NamespacelabelCustomValidator struct is responsible for validating the Namespacelabel resource
 // when it is created, updated, or deleted.
 type NamespacelabelCustomValidator struct {
-	Client  client.Client
-	decoder *admission.Decoder
-	Logger  logr.Logger
+	Client   client.Client
+	decoder  *admission.Decoder
+	Logger   logr.Logger
+	Recorder record.EventRecorder
 }
 
 var _ webhook.CustomValidator = &NamespacelabelCustomValidator{}
@@ -67,6 +70,9 @@ func (v *NamespacelabelCustomValidator) ValidateCreate(ctx context.Context, obj 
 	}
 
 	if len(existingnamespaceLabels.Items) > 0 {
+		v.Recorder.Eventf(namespaceLabel, corev1.EventTypeWarning, "FailedCreate",
+			"only one NamespaceLabel is allowed per namespace; found %d existing", len(existingnamespaceLabels.Items))
+
 		return nil, fmt.Errorf("only one NamespaceLabel is allowed per namespace; found %d existing", len(existingnamespaceLabels.Items))
 	}
 
