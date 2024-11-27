@@ -42,15 +42,10 @@ func SetupNamespacelabelWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
-// Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
 // +kubebuilder:webhook:path=/validate-labels-dana-io-v1alpha1-namespacelabel,mutating=false,failurePolicy=fail,sideEffects=None,groups=labels.dana.io,resources=namespacelabels,verbs=create;update,versions=v1alpha1,name=vnamespacelabel-v1alpha1.kb.io,admissionReviewVersions=v1
 
 // NamespacelabelCustomValidator struct is responsible for validating the Namespacelabel resource
 // when it is created, updated, or deleted.
-//
-// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
-// as this struct is used only for temporary operations and does not need to be deeply copied.
 type NamespacelabelCustomValidator struct {
 	Client  client.Client
 	decoder *admission.Decoder
